@@ -62,6 +62,16 @@ for `ghp`.
 (branch, event, actor, duration, status); the query filters by title or
 branch. <kbd>↩</kbd> opens a run, <kbd>⌥</kbd><kbd>↩</kbd> copies its URL.
 
+### Review queue and my pull requests — `ghr`, `ghm`
+
+- `ghr [query]` — open pull requests where your review is requested
+- `ghm [query]` — your open pull requests
+
+Both search every owner of `GH_OWNERS` (`org:` or `user:` qualifiers, picked
+from what GitHub says each owner is), show the repository in the title and
+use the same modifiers as `ghp`. The query filters on title, author, branch
+and number.
+
 ## How it works
 
 - Every call goes through the `gh` CLI (`gh api graphql`, `gh api`): it
@@ -69,7 +79,7 @@ branch. <kbd>↩</kbd> opens a run, <kbd>⌥</kbd><kbd>↩</kbd> copies its URL.
 - Results are cached under Alfred's workflow cache folder. A fresh cache is
   shown at once; a stale one too, while a background process refreshes it and
   Alfred reloads the list. Repositories are cached for 1 hour per owner, pull
-  requests for 1 minute per repository and state, workflows for 10 minutes
+  requests (and the `ghr` / `ghm` lists) for 1 minute, workflows for 10 minutes
   and runs for 30 seconds.
 
 ## Configuration

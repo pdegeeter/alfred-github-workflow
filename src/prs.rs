@@ -36,6 +36,65 @@ pub const MERGED_PRS_QUERY: &str = repo_prs_query!("states: [MERGED], ");
 /// Pull requests of a repository in any state.
 pub const ALL_PRS_QUERY: &str = repo_prs_query!("");
 
+/// Pull requests matching a search query (`$q`), across repositories.
+pub const SEARCH_PRS_QUERY: &str = concat!(
+    "query($q: String!) { search(type: ISSUE, first: 50, query: $q) { nodes { ... on PullRequest { ",
+    pr_fields!(),
+    " } } } }"
+);
+
+/// The cross-owner pull request lists.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Search {
+    /// `ghr`: open pull requests where my review is requested.
+    Review,
+    /// `ghm`: my open pull requests.
+    Mine,
+}
+
+impl Search {
+    pub fn parse(value: &str) -> Option<Search> {
+        match value {
+            "review" => Some(Search::Review),
+            "mine" => Some(Search::Mine),
+            _ => None,
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Search::Review => "review",
+            Search::Mine => "mine",
+        }
+    }
+
+    /// The GitHub search query, restricted by owner `qualifiers`
+    /// (`org:x user:y`).
+    pub fn query(self, qualifiers: &str) -> String {
+        let who = match self {
+            Search::Review => "review-requested:@me",
+            Search::Mine => "author:@me",
+        };
+
+        format!("is:pr is:open archived:false {who} sort:updated-desc {qualifiers}")
+            .trim_end()
+            .to_owned()
+    }
+}
+
+/// Parse the `data` of [`SEARCH_PRS_QUERY`].
+pub fn parse_search(data: &Value) -> Vec<Pr> {
+    parse_nodes(&data["search"]["nodes"])
+}
+
+/// Fetch the pull requests of a cross-owner list.
+pub fn fetch_search(gh: &Gh, search: Search, qualifiers: &str) -> Result<Vec<Pr>, GhError> {
+    let query = search.query(qualifiers);
+    let data = gh.graphql(SEARCH_PRS_QUERY, &[("q", query.as_str())])?;
+
+    Ok(parse_search(&data))
+}
+
 /// Which pull requests `ghp` lists.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PrState {

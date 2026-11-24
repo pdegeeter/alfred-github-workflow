@@ -10,6 +10,8 @@ object in the Alfred workflow graph:
 | `alfred-gh repos [query]`   | Script Filter                | `gho`   | Repositories of `GH_OWNERS`, ranked. |
 | `alfred-gh prs [query]`     | Script Filter                | `ghp`   | Pull requests of one repository (resolved from `owner/name` or a bare name). |
 | `alfred-gh workflows [query]` | Script Filter              | `gha`   | Actions workflows of one repository with their last run, or one workflow's runs (`runs:<id>`). |
+| `alfred-gh review [query]`  | Script Filter                | `ghr`   | Open pull requests across `GH_OWNERS` where my review is requested. |
+| `alfred-gh mine [query]`    | Script Filter                | `ghm`   | My open pull requests across `GH_OWNERS`. |
 | `alfred-gh run <arg>`       | Run Script (`action.script`) | —       | Decode the selected item's `arg` and perform it. |
 | `alfred-gh refresh <key>`   | — (spawned detached)         | —       | Rewrite one stale cache entry. |
 
@@ -101,6 +103,14 @@ sequenceDiagram
   (title, author, head branch, number). Checks come from the head commit's
   `statusCheckRollup`. The Jira key (`[A-Z][A-Z0-9]+-\d+`, `jira::pr_key`) is
   searched in the title, then the head branch.
+- **Review queue and my pull requests** (`ghr`, `ghm`): one
+  `search(type: ISSUE)` query (`prs::SEARCH_PRS_QUERY`) with
+  `is:pr is:open archived:false review-requested:@me` (or `author:@me`)
+  `sort:updated-desc` and the owner qualifiers (`org:x user:y`). Each owner's
+  kind comes from its cached `__typename`, never hardcoded; an owner whose
+  repositories cannot be fetched is reported and left out of the qualifiers.
+  The cache entry is keyed by the qualifiers, so changing `GH_OWNERS` never
+  serves another set's results.
 - **Actions** (REST, `workflows.rs`): `repos/{repo}/actions/workflows`, then
   the last 100 runs on the default branch in **one** call
   (`actions/runs?branch=<default>&per_page=100`, branch percent-encoded),
@@ -125,6 +135,7 @@ Entries are JSON files under `$alfred_workflow_cache`, one per `cache::Key`:
 | `workflows <owner/name>` | `workflows-<owner>_<name>.json` (with the default branch) | 10 min |
 | `branch-runs <owner/name> <branch>` | `branch-runs-<owner>_<name>-<branch>.json` | 30 s |
 | `runs <owner/name> <workflow id>` | `runs-<owner>_<name>-<id>.json` | 30 s |
+| `search <review\|mine> <qualifiers>` | `review-<qualifiers>.json` / `mine-<qualifiers>.json` | 60 s |
 
 Each file stores the value and its `fetched_at` Unix time; freshness is
 computed against an injected clock, so the logic is unit-tested without

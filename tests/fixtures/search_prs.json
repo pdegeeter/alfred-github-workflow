@@ -1,0 +1,92 @@
+{
+  "data": {
+    "search": {
+      "nodes": [
+        {
+          "number": 42,
+          "title": "[PAY-1234] Fix rounding of invoice totals",
+          "url": "https://github.com/acme-org/api/pull/42",
+          "state": "OPEN",
+          "isDraft": false,
+          "updatedAt": "2026-11-24T21:00:00Z",
+          "headRefName": "fix/invoice-rounding",
+          "baseRefName": "main",
+          "reviewDecision": "APPROVED",
+          "author": {
+            "login": "octo-user"
+          },
+          "repository": {
+            "nameWithOwner": "acme-org/api"
+          },
+          "commits": {
+            "nodes": [
+              {
+                "commit": {
+                  "statusCheckRollup": {
+                    "state": "SUCCESS"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "number": 41,
+          "title": "Add retries to the webhook sender",
+          "url": "https://github.com/acme-org/api/pull/41",
+          "state": "OPEN",
+          "isDraft": true,
+          "updatedAt": "2026-11-24T12:00:00Z",
+          "headRefName": "feat/OPS-77-webhook-retries",
+          "baseRefName": "main",
+          "reviewDecision": "REVIEW_REQUIRED",
+          "author": {
+            "login": "dev-two"
+          },
+          "repository": {
+            "nameWithOwner": "acme-org/api"
+          },
+          "commits": {
+            "nodes": [
+              {
+                "commit": {
+                  "statusCheckRollup": {
+                    "state": "PENDING"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "number": 7,
+          "title": "Tidy shell aliases",
+          "url": "https://github.com/octo-user/dotfiles/pull/7",
+          "state": "OPEN",
+          "isDraft": false,
+          "updatedAt": "2026-11-24T12:00:00Z",
+          "headRefName": "tidy-aliases",
+          "baseRefName": "main",
+          "reviewDecision": null,
+          "author": {
+            "login": "dev-two"
+          },
+          "repository": {
+            "nameWithOwner": "octo-user/dotfiles"
+          },
+          "commits": {
+            "nodes": [
+              {
+                "commit": {
+                  "statusCheckRollup": {
+                    "state": "PENDING"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

@@ -14,7 +14,7 @@ use crate::cache::{Cache, Entry, Key};
 use crate::gh::{Gh, GhError};
 use crate::local;
 use crate::owners::{self, OwnerKind};
-use crate::prs;
+use crate::prs::{self, Search};
 use crate::query;
 use crate::ranking::{self, Resolution};
 use crate::repos::{self, OwnerRepos, Repo};
@@ -157,6 +157,9 @@ impl<'a> App<'a> {
                 key,
                 &workflows::fetch_workflow_runs(&gh, repo, *workflow_id)?,
             )?,
+            Key::Search { search, qualifiers } => self
+                .cache
+                .write(key, &prs::fetch_search(&gh, *search, qualifiers)?)?,
         }
 
         lock.release();
@@ -357,6 +360,69 @@ impl<'a> App<'a> {
             })
             .flatten()
             .collect()
+    }
+
+    /// `ghr` / `ghm`: open pull requests across the configured owners (review
+    /// requested from me, or authored by me). Owner kinds, hence the
+    /// `org:` / `user:` qualifiers, come from the repository cache.
+    pub fn search(&self, search: Search, input: &str) -> Listing {
+        let now = self.now();
+
+        let (owners, viewer_refreshing) = match self.owners() {
+            Ok(owners) => owners,
+            Err(error) => return Listing::of(vec![alfred::gh_error_item(None, &error, now)]),
+        };
+
+        let (fetched, failed, repos_refreshing) = self.owner_repos(&owners);
+        let mut items = self.owner_problems(&fetched, &failed);
+
+        if fetched.is_empty() {
+            return Listing {
+                items,
+                rerun: repos_refreshing || viewer_refreshing,
+            };
+        }
+
+        let kinds: Vec<(String, OwnerKind)> = fetched
+            .iter()
+            .map(|owner| (owner.login.clone(), owner.kind))
+            .collect();
+        let qualifiers = owners::search_qualifiers(&kinds);
+        let key = Key::Search {
+            search,
+            qualifiers: qualifiers.clone(),
+        };
+
+        let (all, refreshing) = match self.load(
+            &key,
+            |gh| prs::fetch_search(gh, search, &qualifiers),
+            |_| true,
+        ) {
+            Ok(loaded) => loaded,
+            Err(error) => {
+                items.push(alfred::gh_error_item(None, &error, now));
+
+                return Listing::of(items);
+            }
+        };
+
+        let matching = ranking::filter_prs(all, input);
+
+        if matching.is_empty() {
+            let title = match search {
+                Search::Review => "No pull request waiting for your review",
+                Search::Mine => "No open pull request of yours",
+            };
+
+            items.push(alfred::error_item(title, &format!("Searched {qualifiers}")));
+        }
+
+        items.extend(matching.iter().map(|pr| alfred::pr_item(pr, true, now)));
+
+        Listing {
+            items,
+            rerun: refreshing || repos_refreshing || viewer_refreshing,
+        }
     }
 
     /// The default branch of a cached repository.

@@ -66,7 +66,9 @@ fn every_keyword_runs_its_subcommand() {
     let expected: BTreeMap<String, String> = [
         ("gho", "./alfred-gh repos \"$1\""),
         ("gha", "./alfred-gh workflows \"$1\""),
+        ("ghm", "./alfred-gh mine \"$1\""),
         ("ghp", "./alfred-gh prs \"$1\""),
+        ("ghr", "./alfred-gh review \"$1\""),
     ]
     .into_iter()
     .map(|(keyword, script)| (keyword.to_owned(), script.to_owned()))

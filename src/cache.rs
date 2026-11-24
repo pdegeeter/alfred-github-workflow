@@ -23,7 +23,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
-use crate::prs::PrState;
+use crate::prs::{PrState, Search};
 use crate::time;
 
 /// What a cache entry holds.
@@ -41,6 +41,8 @@ pub enum Key {
     BranchRuns { repo: String, branch: String },
     /// The latest runs of one workflow.
     Runs { repo: String, workflow_id: u64 },
+    /// A cross-owner pull request list, for one set of owner qualifiers.
+    Search { search: Search, qualifiers: String },
 }
 
 impl Key {
@@ -53,6 +55,7 @@ impl Key {
             Key::Workflows { repo } => format!("workflows-{repo}"),
             Key::BranchRuns { repo, branch } => format!("branch-runs-{repo}-{branch}"),
             Key::Runs { repo, workflow_id } => format!("runs-{repo}-{workflow_id}"),
+            Key::Search { search, qualifiers } => format!("{}-{qualifiers}", search.as_str()),
         };
 
         raw.chars()
@@ -70,7 +73,7 @@ impl Key {
     pub fn ttl(&self) -> Duration {
         match self {
             Key::Viewer | Key::Repos { .. } => Duration::from_secs(3_600),
-            Key::Prs { .. } => Duration::from_secs(60),
+            Key::Prs { .. } | Key::Search { .. } => Duration::from_secs(60),
             Key::Workflows { .. } => Duration::from_secs(600),
             Key::BranchRuns { .. } | Key::Runs { .. } => Duration::from_secs(30),
         }
@@ -86,6 +89,11 @@ impl Key {
             Key::Workflows { repo } => format!("workflows {repo}"),
             Key::BranchRuns { repo, branch } => format!("branch-runs {repo} {branch}"),
             Key::Runs { repo, workflow_id } => format!("runs {repo} {workflow_id}"),
+            Key::Search { search, qualifiers } => {
+                format!("search {} {qualifiers}", search.as_str())
+                    .trim_end()
+                    .to_owned()
+            }
         }
     }
 
@@ -115,6 +123,11 @@ impl Key {
                 workflow_id: id
                     .parse()
                     .map_err(|_| anyhow!("invalid workflow id: {id:?}"))?,
+            },
+            ["search", search, qualifiers @ ..] => Key::Search {
+                search: Search::parse(search)
+                    .ok_or_else(|| anyhow!("invalid search: {search:?}"))?,
+                qualifiers: qualifiers.join(" "),
             },
             _ => bail!("invalid cache key: {arg:?}"),
         };

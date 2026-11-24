@@ -4,6 +4,8 @@
 //!   * `repos [query]` — script filter `gho`: repositories of the configured owners.
 //!   * `prs [query]`   — script filter `ghp`: pull requests of one repository.
 //!   * `workflows [query]` — script filter `gha`: Actions workflows and runs.
+//!   * `review [query]` — script filter `ghr`: pull requests awaiting my review.
+//!   * `mine [query]`   — script filter `ghm`: my open pull requests.
 //!   * `run <arg>`     — Run Script action: perform the selected item.
 //!   * `refresh <key>` — rewrite one stale cache entry (spawned detached by the
 //!     script filters, never by Alfred directly).
@@ -18,6 +20,7 @@ use alfred_gh::alfred;
 use alfred_gh::app::{App, Listing, Settings};
 use alfred_gh::cache::{Cache, Key};
 use alfred_gh::gh;
+use alfred_gh::prs::Search;
 use alfred_gh::runner::SystemRunner;
 
 fn main() -> ExitCode {
@@ -45,11 +48,13 @@ fn main() -> ExitCode {
         "repos" => output(app.repos(&arg)),
         "prs" => output(app.prs(&arg)),
         "workflows" => output(app.workflows(&arg)),
+        "review" => output(app.search(Search::Review, &arg)),
+        "mine" => output(app.search(Search::Mine, &arg)),
         "run" => run(&app, &arg),
         "refresh" => refresh(&app, &arg),
         other => {
             eprintln!(
-                "unknown command: `{other}` (expected repos, prs, workflows, run or refresh)"
+                "unknown command: `{other}` (expected repos, prs, workflows, review, mine, run or refresh)"
             );
 
             ExitCode::FAILURE

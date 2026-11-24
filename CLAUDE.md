@@ -18,7 +18,8 @@ An Alfred (macOS) workflow written in Rust to navigate GitHub. A single binary,
 `alfred-gh`, backs every object of the Alfred graph:
 
 - **Script Filters**, one per keyword: `repos` (`gho`), `prs` (`ghp`),
-  `workflows` (`gha`). They print Alfred JSON.
+  `workflows` (`gha`), `review` (`ghr`), `mine` (`ghm`). They print Alfred
+  JSON.
 - One **Run Script**, `alfred-gh run <arg>`, connected to every script filter
   for every modifier used. `arg` is an encoded `action::Action`
   (`"<verb> <payload>"`, see `docs/architecture.md`). Whatever it prints feeds a
@@ -82,7 +83,7 @@ process without waiting (stale-cache refreshes).
 - `repos.rs` — `repositoryOwner(login:)` pages (`ownerAffiliations: [OWNER]`),
   pagination, `Repo` / `OwnerRepos`.
 - `prs.rs` — `Pr`, one fixed query per state set (`OPEN_PRS_QUERY`…), CI
-  rollup and review state. `jira.rs` — ticket key extraction.
+  rollup and review state, the cross-owner `Search` (`ghr` / `ghm`). `jira.rs` — ticket key extraction.
 - `workflows.rs` — Actions over REST: workflows, the last 100 runs on the
   default branch in one call grouped by workflow, one workflow's last 10 runs.
 - `ranking.rs` — repository ranking, repository resolution (`Resolution`),
