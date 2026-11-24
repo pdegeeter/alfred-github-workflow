@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- A neutral pull-request glyph: two branches merging, on a dark tile. -->
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="#24292f"/>
+  <g fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="168" cy="136" r="40"/>
+    <circle cx="168" cy="376" r="40"/>
+    <circle cx="344" cy="376" r="40"/>
+    <line x1="168" y1="176" x2="168" y2="336"/>
+    <path d="M344 336 V216 a56 56 0 0 0 -56 -56 H236"/>
+    <polyline points="276,120 236,160 276,200"/>
+  </g>
+</svg>

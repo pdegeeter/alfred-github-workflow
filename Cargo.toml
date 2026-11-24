@@ -1,0 +1,27 @@
+[package]
+name = "alfred-gh"
+version = "0.1.0"
+edition = "2021"
+description = "Alfred workflow to navigate GitHub repositories, pull requests and Actions"
+license = "MIT"
+repository = "https://github.com/pdegeeter/alfred-github-workflow"
+publish = false
+
+[[bin]]
+name = "alfred-gh"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+powerpack = "0.8"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+# Optimize the binary that ships inside the .alfredworkflow: small and fast to
+# start, since Alfred invokes it on every keystroke.
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
