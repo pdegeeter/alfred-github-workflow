@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{anyhow, bail, Result};
 
 use crate::cache::Cache;
+use crate::jira;
 use crate::local;
 use crate::runner::CommandRunner;
 
@@ -30,6 +31,10 @@ pub enum Action {
     CloneOpen { repo: String, editor: String },
     /// Clear every cache entry.
     Refresh,
+    /// Reopen Alfred with `query` typed in (drill down to another keyword).
+    Reopen { query: String },
+    /// Open a Jira ticket; `None` when the pull request names none.
+    Jira { key: Option<String> },
 }
 
 /// What [`execute`] needs from the outside world.
@@ -41,12 +46,18 @@ pub struct Context<'a> {
     pub cache: &'a Cache,
     /// Whether a path exists (injected so clone checks are testable).
     pub exists: &'a dyn Fn(&Path) -> bool,
+    /// `JIRA_URL`, empty when unset.
+    pub jira_url: &'a str,
 }
 
 impl Action {
     /// The AppleScript that puts its first argument on the clipboard.
     const CLIPBOARD_SCRIPT: &'static str =
         "on run argv\nset the clipboard to (item 1 of argv)\nend run";
+
+    /// The AppleScript that shows Alfred (5 or later) with its first argument
+    /// typed in.
+    const ALFRED_SEARCH_SCRIPT: &'static str = "on run argv\ntell application id \"com.runningwithcrayons.Alfred\" to search (item 1 of argv)\nend run";
 
     /// Encode as the `arg` of an Alfred item.
     pub fn to_arg(&self) -> String {
@@ -55,12 +66,14 @@ impl Action {
             Action::Copy { url } => Action::join("copy", &[url]),
             Action::CloneOpen { repo, editor } => Action::join("clone-open", &[repo, editor]),
             Action::Refresh => Action::join("refresh", &["all"]),
+            Action::Reopen { query } => format!("reopen {query}"),
+            Action::Jira { key } => Action::join("jira", &[key.as_deref().unwrap_or("")]),
         }
     }
 
     /// Decode an item `arg` produced by [`Action::to_arg`].
-    pub fn parse(arg: &str) -> Result<Action> {
-        let arg = arg.trim();
+    pub fn parse(raw: &str) -> Result<Action> {
+        let arg = raw.trim();
         let (verb, payload) = arg.split_once(' ').unwrap_or((arg, ""));
         let payload = payload.trim();
 
@@ -82,6 +95,20 @@ impl Action {
                 }
             }
             "refresh" if payload == "all" => Action::Refresh,
+            "reopen" => Action::Reopen {
+                // Keep the trailing space of `ghp owner/repo ` so Alfred
+                // shows the next level at once.
+                query: Action::required(
+                    raw.trim_start()
+                        .strip_prefix("reopen ")
+                        .unwrap_or_default()
+                        .trim_start(),
+                    "query",
+                )?,
+            },
+            "jira" => Action::Jira {
+                key: (!payload.is_empty()).then(|| payload.to_owned()),
+            },
             other => bail!("unknown action: {other:?}"),
         };
 
@@ -137,7 +164,40 @@ pub fn execute(ctx: &Context, action: &Action) -> Result<Option<String>> {
 
             Ok(Some(format!("Cache cleared ({removed} entr{plural})")))
         }
+        Action::Reopen { query } => {
+            ctx.runner
+                .run(OSASCRIPT, &["-e", Action::ALFRED_SEARCH_SCRIPT, query])?;
+
+            Ok(None)
+        }
+        Action::Jira { key } => open_jira(ctx, key.as_deref()),
     }
+}
+
+fn open_jira(ctx: &Context, key: Option<&str>) -> Result<Option<String>> {
+    let Some(key) = key else {
+        return Ok(Some("No Jira ticket in this pull request".to_owned()));
+    };
+
+    let base = ctx.jira_url.trim();
+
+    if base.is_empty() {
+        return Ok(Some(
+            "Set JIRA_URL in the workflow configuration to open Jira tickets".to_owned(),
+        ));
+    }
+
+    if !base.starts_with("https://") && !base.starts_with("http://") {
+        bail!("JIRA_URL must start with https://");
+    }
+
+    if jira::find_key(key).as_deref() != Some(key) {
+        bail!("invalid Jira key: {key:?}");
+    }
+
+    ctx.runner.run(OPEN, &[&format!("{base}{key}")])?;
+
+    Ok(None)
 }
 
 fn clone_open(ctx: &Context, repo: &str, editor: &str) -> Result<Option<String>> {

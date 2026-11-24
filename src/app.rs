@@ -12,10 +12,12 @@ use serde::Serialize;
 use crate::alfred;
 use crate::cache::{Cache, Entry, Key};
 use crate::gh::{Gh, GhError};
+use crate::local;
 use crate::owners::{self, OwnerKind};
+use crate::prs;
 use crate::query;
-use crate::ranking;
-use crate::repos::{self, OwnerRepos};
+use crate::ranking::{self, Resolution};
+use crate::repos::{self, OwnerRepos, Repo};
 use crate::runner::CommandRunner;
 use crate::time;
 
@@ -138,6 +140,9 @@ impl<'a> App<'a> {
                     self.cache.write(key, &fetched)?;
                 }
             }
+            Key::Prs { repo, state } => self
+                .cache
+                .write(key, &prs::fetch_repo_prs(&gh, repo, *state)?)?,
         }
 
         lock.release();
@@ -262,6 +267,125 @@ impl<'a> App<'a> {
         Listing {
             items,
             rerun: refreshing || viewer_refreshing,
+        }
+    }
+
+    /// Resolve the repository typed first in a `ghp` / `gha` query. On
+    /// success, the `owner/name` and the rest of the query; otherwise the
+    /// listing to show instead (repositories to choose from, or an error).
+    fn resolve(&self, input: &str) -> Result<(String, String), Listing> {
+        let now = self.now();
+        let typed = query::parse_repo(input);
+
+        // An explicit owner/name needs no repository list.
+        if typed.repo.contains('/') && local::is_valid_name_with_owner(&typed.repo) {
+            let cached = self.cached_repos();
+
+            let repo = match ranking::resolve_repo(&cached, &typed.repo) {
+                Resolution::Exact(repo) => repo,
+                _ => typed.repo.clone(),
+            };
+
+            return Ok((repo, typed.rest));
+        }
+
+        let (owners, viewer_refreshing) = match self.owners() {
+            Ok(owners) => owners,
+            Err(error) => return Err(Listing::of(vec![alfred::gh_error_item(None, &error, now)])),
+        };
+
+        let (fetched, failed, refreshing) = self.owner_repos(&owners);
+        let mut items = self.owner_problems(&fetched, &failed);
+        let all: Vec<_> = fetched.into_iter().flat_map(|owner| owner.repos).collect();
+
+        match ranking::resolve_repo(&all, &typed.repo) {
+            Resolution::Exact(repo) => Ok((repo, typed.rest)),
+            Resolution::Candidates(candidates) => {
+                items.extend(
+                    candidates
+                        .iter()
+                        .map(|repo| alfred::candidate_item(repo, now)),
+                );
+
+                Err(Listing {
+                    items,
+                    rerun: refreshing || viewer_refreshing,
+                })
+            }
+            Resolution::Unknown => {
+                items.push(alfred::error_item(
+                    &format!("No repository matches “{}”", typed.repo),
+                    "Type owner/name, or refresh the cache from gho",
+                ));
+
+                Err(Listing {
+                    items,
+                    rerun: refreshing || viewer_refreshing,
+                })
+            }
+        }
+    }
+
+    /// Repositories already cached (fresh or stale), without fetching.
+    fn cached_repos(&self) -> Vec<Repo> {
+        self.settings
+            .owners
+            .iter()
+            .filter_map(|owner| {
+                let key = Key::Repos {
+                    owner: owner.clone(),
+                };
+
+                match self.cache.read::<OwnerRepos>(&key) {
+                    Entry::Fresh(value) | Entry::Stale(value) => Some(value.repos),
+                    Entry::Missing => None,
+                }
+            })
+            .flatten()
+            .collect()
+    }
+
+    /// `ghp`: pull requests of one repository.
+    pub fn prs(&self, input: &str) -> Listing {
+        let now = self.now();
+
+        let (repo, rest) = match self.resolve(input) {
+            Ok(resolved) => resolved,
+            Err(listing) => return listing,
+        };
+
+        let (state, text) = query::parse_pr_filter(&rest);
+        let key = Key::Prs {
+            repo: repo.clone(),
+            state,
+        };
+
+        let (all, refreshing) =
+            match self.load(&key, |gh| prs::fetch_repo_prs(gh, &repo, state), |_| true) {
+                Ok(loaded) => loaded,
+                Err(error) => {
+                    return Listing::of(vec![alfred::gh_error_item(Some(&repo), &error, now)])
+                }
+            };
+
+        let matching = ranking::filter_prs(all, &text);
+
+        if matching.is_empty() {
+            return Listing {
+                items: vec![alfred::error_item(
+                    &format!("No {} pull request in {repo}", state.as_str()),
+                    "state:all or state:merged to see more",
+                )],
+                rerun: refreshing,
+            };
+        }
+
+        Listing {
+            items: matching
+                .iter()
+                .map(|pr| alfred::pr_item(pr, false, now))
+                .collect(),
+            rerun: refreshing,
         }
     }
 }

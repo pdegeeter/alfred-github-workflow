@@ -5,6 +5,7 @@ use std::time::Duration;
 use alfred_gh::action::Action;
 use alfred_gh::alfred;
 use alfred_gh::gh::GhError;
+use alfred_gh::prs::{Checks, Pr};
 use alfred_gh::repos::Repo;
 use serde_json::Value;
 
@@ -94,8 +95,80 @@ fn a_repo_item_opens_clones_and_copies() {
                 "copy https://github.com/acme-org/api".to_owned()
             ),
             ("cmd".to_owned(), "clone-open acme-org/api Zed".to_owned()),
+            ("ctrl".to_owned(), "reopen ghp acme-org/api ".to_owned()),
         ]
     );
+}
+
+fn pr() -> Pr {
+    Pr {
+        number: 41,
+        title: "Add retries".to_owned(),
+        url: "https://github.com/acme-org/api/pull/41".to_owned(),
+        state: "OPEN".to_owned(),
+        is_draft: true,
+        updated_at: "2026-11-24T21:00:00Z".to_owned(),
+        head: "feat/OPS-77-retries".to_owned(),
+        base: "main".to_owned(),
+        review_decision: Some("REVIEW_REQUIRED".to_owned()),
+        author: Some("dev-two".to_owned()),
+        repo: "acme-org/api".to_owned(),
+        checks: Some(Checks::Pending),
+    }
+}
+
+#[test]
+fn a_pr_item_shows_its_state_and_opens_files_copies_and_jira() {
+    let item = item_json(alfred::pr_item(&pr(), false, NOW));
+
+    assert_eq!(item["title"], "Add retries");
+    assert_eq!(
+        item["subtitle"],
+        "#41 · dev-two · feat/OPS-77-retries→main · draft · CI 🟡 · review required · updated 3h ago"
+    );
+    assert_eq!(item["arg"], "open https://github.com/acme-org/api/pull/41");
+    assert_eq!(
+        mod_args(&item),
+        [
+            (
+                "alt".to_owned(),
+                "copy https://github.com/acme-org/api/pull/41".to_owned()
+            ),
+            (
+                "cmd".to_owned(),
+                "open https://github.com/acme-org/api/pull/41/files".to_owned()
+            ),
+            ("ctrl".to_owned(), "jira OPS-77".to_owned()),
+        ]
+    );
+    assert_eq!(item["mods"]["ctrl"]["subtitle"], "Open OPS-77 in Jira");
+}
+
+#[test]
+fn a_pr_item_across_repositories_names_its_repository() {
+    let mut merged = pr();
+    merged.state = "MERGED".to_owned();
+    merged.head = "feat/retries".to_owned();
+    merged.author = None;
+    merged.checks = None;
+    merged.review_decision = None;
+
+    let item = item_json(alfred::pr_item(&merged, true, NOW));
+
+    assert_eq!(item["title"], "acme-org/api · Add retries");
+    assert_eq!(
+        item["subtitle"],
+        "#41 · ghost · feat/retries→main · merged · updated 3h ago"
+    );
+    assert_eq!(item["mods"]["ctrl"]["arg"], "jira");
+}
+
+#[test]
+fn a_candidate_completes_the_query() {
+    let item = item_json(alfred::candidate_item(&repo(), NOW));
+
+    assert_eq!(item["valid"], false);
+    assert_eq!(item["autocomplete"], "acme-org/api ");
 }
 
 #[test]
@@ -118,6 +191,7 @@ fn every_modifier_arg_decodes() {
         alfred::repo_item(&repo(), "Visual Studio Code", NOW),
         alfred::refresh_item(),
         alfred::sso_item("acme-org"),
+        alfred::pr_item(&pr(), true, NOW),
     ];
 
     for item in items {

@@ -20,11 +20,29 @@ repositories come last and say so.
   (`~/Workspace/github.com/<owner>/<repo>`) in `EDITOR_APP`, cloning it with
   `gh repo clone` first if it is missing
 - <kbd>⌥</kbd><kbd>↩</kbd> copy the URL
+- <kbd>⌃</kbd><kbd>↩</kbd> its pull requests (reopens Alfred on `ghp owner/repo `)
 - the last item, **Refresh cache**, forgets everything cached
 
 If an organization's repositories are missing because `gh` is not authorized
 for its SAML SSO, an item says so and <kbd>↩</kbd> opens
 [the authorization page](https://github.com/settings/connections/applications).
+
+### Pull requests — `ghp`
+
+`ghp <repo> [query]` lists the open pull requests of a repository, most
+recently updated first. `<repo>` is `owner/name`, or a bare name when only one
+of your owners has it; otherwise matching repositories are listed and
+<kbd>↩</kbd> completes the query. The query filters on title, author, head
+branch and number (`#42`); `state:merged` or `state:all` switch state.
+
+Each item shows `#number · author · head→base · draft · CI ✅❌🟡 · review state · updated …`.
+
+- <kbd>↩</kbd> open the pull request
+- <kbd>⌘</kbd><kbd>↩</kbd> open “Files changed”
+- <kbd>⌥</kbd><kbd>↩</kbd> copy the URL
+- <kbd>⌃</kbd><kbd>↩</kbd> open the Jira ticket whose key (`ABC-123`) is in the
+  title or the head branch, under `JIRA_URL` (a notification says when there
+  is none, or when `JIRA_URL` is not set)
 
 ## How it works
 
@@ -32,7 +50,8 @@ for its SAML SSO, an item says so and <kbd>↩</kbd> opens
   handles authentication, token refresh and SSO.
 - Results are cached under Alfred's workflow cache folder. A fresh cache is
   shown at once; a stale one too, while a background process refreshes it and
-  Alfred reloads the list. Repositories are cached for 1 hour per owner.
+  Alfred reloads the list. Repositories are cached for 1 hour per owner, pull
+  requests for 1 minute per repository and state.
 
 ## Configuration
 

@@ -63,10 +63,13 @@ fn every_keyword_runs_its_subcommand() {
         })
         .collect();
 
-    let expected: BTreeMap<String, String> = [("gho", "./alfred-gh repos \"$1\"")]
-        .into_iter()
-        .map(|(keyword, script)| (keyword.to_owned(), script.to_owned()))
-        .collect();
+    let expected: BTreeMap<String, String> = [
+        ("gho", "./alfred-gh repos \"$1\""),
+        ("ghp", "./alfred-gh prs \"$1\""),
+    ]
+    .into_iter()
+    .map(|(keyword, script)| (keyword.to_owned(), script.to_owned()))
+    .collect();
 
     assert_eq!(keywords, expected);
 }

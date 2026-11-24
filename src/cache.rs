@@ -19,10 +19,11 @@ use std::io::{ErrorKind, Write};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
+use crate::prs::PrState;
 use crate::time;
 
 /// What a cache entry holds.
@@ -32,6 +33,8 @@ pub enum Key {
     Viewer,
     /// The repositories of one owner.
     Repos { owner: String },
+    /// The pull requests of one repository (`owner/name`) in one state.
+    Prs { repo: String, state: PrState },
 }
 
 impl Key {
@@ -40,6 +43,7 @@ impl Key {
         let raw = match self {
             Key::Viewer => "viewer".to_owned(),
             Key::Repos { owner } => format!("repos-{owner}"),
+            Key::Prs { repo, state } => format!("prs-{repo}-{}", state.as_str()),
         };
 
         raw.chars()
@@ -57,6 +61,7 @@ impl Key {
     pub fn ttl(&self) -> Duration {
         match self {
             Key::Viewer | Key::Repos { .. } => Duration::from_secs(3_600),
+            Key::Prs { .. } => Duration::from_secs(60),
         }
     }
 
@@ -66,19 +71,23 @@ impl Key {
         match self {
             Key::Viewer => "viewer".to_owned(),
             Key::Repos { owner } => format!("repos {owner}"),
+            Key::Prs { repo, state } => format!("prs {repo} {}", state.as_str()),
         }
     }
 
     /// Decode an argument produced by [`Key::to_arg`].
     pub fn parse(arg: &str) -> Result<Key> {
-        let arg = arg.trim();
-        let (kind, rest) = arg.split_once(' ').unwrap_or((arg, ""));
-        let rest = rest.trim();
+        let fields: Vec<&str> = arg.split_whitespace().collect();
 
-        let key = match (kind, rest.is_empty()) {
-            ("viewer", true) => Key::Viewer,
-            ("repos", false) => Key::Repos {
-                owner: rest.to_owned(),
+        let key = match fields.as_slice() {
+            ["viewer"] => Key::Viewer,
+            ["repos", owner] => Key::Repos {
+                owner: (*owner).to_owned(),
+            },
+            ["prs", repo, state] => Key::Prs {
+                repo: (*repo).to_owned(),
+                state: PrState::parse(state)
+                    .ok_or_else(|| anyhow!("invalid pull request state: {state:?}"))?,
             },
             _ => bail!("invalid cache key: {arg:?}"),
         };

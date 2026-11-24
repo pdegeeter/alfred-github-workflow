@@ -22,10 +22,24 @@ fn every_action() -> Vec<Action> {
             editor: "Visual Studio Code".to_owned(),
         },
         Action::Refresh,
+        Action::Reopen {
+            query: "ghp acme-org/api ".to_owned(),
+        },
+        Action::Jira {
+            key: Some("PAY-1234".to_owned()),
+        },
+        Action::Jira { key: None },
     ]
 }
 
-fn run(runner: &FakeRunner, action: &Action, exists: bool) -> anyhow::Result<Option<String>> {
+const JIRA_URL: &str = "https://jira.example.com/browse/";
+
+fn run_with(
+    runner: &FakeRunner,
+    action: &Action,
+    exists: bool,
+    jira_url: &str,
+) -> anyhow::Result<Option<String>> {
     let dir = tempfile::tempdir().unwrap();
     let cache = Cache::new(dir.path(), SystemTime::now());
     let ctx = Context {
@@ -34,9 +48,14 @@ fn run(runner: &FakeRunner, action: &Action, exists: bool) -> anyhow::Result<Opt
         home: "/Users/octo".into(),
         cache: &cache,
         exists: &|_: &Path| exists,
+        jira_url,
     };
 
     action::execute(&ctx, action)
+}
+
+fn run(runner: &FakeRunner, action: &Action, exists: bool) -> anyhow::Result<Option<String>> {
+    run_with(runner, action, exists, JIRA_URL)
 }
 
 #[test]
@@ -55,7 +74,18 @@ fn args_start_with_their_verb() {
         .map(|action| action.to_arg().split(' ').next().unwrap().to_owned())
         .collect();
 
-    assert_eq!(verbs, ["open", "copy", "clone-open", "refresh"]);
+    assert_eq!(
+        verbs,
+        [
+            "open",
+            "copy",
+            "clone-open",
+            "refresh",
+            "reopen",
+            "jira",
+            "jira"
+        ]
+    );
 }
 
 #[test]
@@ -206,6 +236,7 @@ fn refresh_clears_the_cache() {
         home: "/Users/octo".into(),
         cache: &cache,
         exists: &|_: &Path| true,
+        jira_url: JIRA_URL,
     };
 
     let message = action::execute(&ctx, &Action::Refresh).unwrap();
@@ -222,4 +253,79 @@ fn a_failing_command_fails_the_action() {
     };
 
     assert!(run(&runner, &action, true).is_err());
+}
+
+#[test]
+fn reopen_keeps_the_trailing_space_and_passes_the_query_as_an_argument() {
+    assert_eq!(
+        Action::parse("reopen gha acme-org/api runs:123 ").unwrap(),
+        Action::Reopen {
+            query: "gha acme-org/api runs:123 ".to_owned()
+        }
+    );
+
+    let runner = FakeRunner::new().with_success(OSASCRIPT, "");
+    let action = Action::Reopen {
+        query: "ghp acme-org/api ".to_owned(),
+    };
+
+    assert_eq!(run(&runner, &action, true).unwrap(), None);
+
+    let call = &runner.calls()[0];
+    assert_eq!(call.program, OSASCRIPT);
+    assert!(call.args[1].contains("com.runningwithcrayons.Alfred"));
+    assert!(!call.args[1].contains("acme-org"));
+    assert_eq!(call.args[2], "ghp acme-org/api ");
+}
+
+#[test]
+fn jira_opens_the_ticket_under_jira_url() {
+    let runner = FakeRunner::new().with_success(OPEN, "");
+    let action = Action::Jira {
+        key: Some("PAY-1234".to_owned()),
+    };
+
+    assert_eq!(run(&runner, &action, true).unwrap(), None);
+    assert_eq!(
+        runner.calls()[0].args,
+        ["https://jira.example.com/browse/PAY-1234"]
+    );
+}
+
+#[test]
+fn jira_without_a_ticket_or_a_url_only_notifies() {
+    let runner = FakeRunner::new();
+
+    let none = run(&runner, &Action::Jira { key: None }, true).unwrap();
+    let unset = run_with(
+        &runner,
+        &Action::Jira {
+            key: Some("PAY-1234".to_owned()),
+        },
+        true,
+        "  ",
+    )
+    .unwrap();
+
+    assert_eq!(none.as_deref(), Some("No Jira ticket in this pull request"));
+    assert_eq!(
+        unset.as_deref(),
+        Some("Set JIRA_URL in the workflow configuration to open Jira tickets")
+    );
+    assert!(runner.calls().is_empty());
+}
+
+#[test]
+fn jira_rejects_odd_keys_and_urls() {
+    let runner = FakeRunner::new();
+    let odd_key = Action::Jira {
+        key: Some("../admin".to_owned()),
+    };
+    let key = Action::Jira {
+        key: Some("PAY-1".to_owned()),
+    };
+
+    assert!(run(&runner, &odd_key, true).is_err());
+    assert!(run_with(&runner, &key, true, "javascript:alert(1)//").is_err());
+    assert!(runner.calls().is_empty());
 }

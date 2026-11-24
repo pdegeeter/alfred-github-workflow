@@ -11,11 +11,16 @@ use powerpack::{Item, Key, Modifier, Output};
 
 use crate::action::Action;
 use crate::gh::{GhError, SSO_SETTINGS_URL};
+use crate::jira;
+use crate::prs::Pr;
 use crate::repos::Repo;
 use crate::time;
 
 /// Delay before Alfred reruns a script filter whose cache is being refreshed.
 pub const RERUN: Duration = Duration::from_millis(500);
+
+/// Keyword of the pull requests script filter, reopened by drill-downs.
+pub const PRS_KEYWORD: &str = "ghp";
 
 /// Item shown in place of a list when something went wrong.
 pub fn error_item(title: &str, message: &str) -> Item {
@@ -126,6 +131,105 @@ pub fn repo_item(repo: &Repo, editor: &str, now: i64) -> Item {
             &Action::Copy {
                 url: repo.url.clone(),
             },
+        ))
+        .modifier(modifier(
+            Key::Control,
+            "Pull requests",
+            &Action::Reopen {
+                query: format!("{PRS_KEYWORD} {} ", repo.name_with_owner),
+            },
+        ))
+}
+
+/// A repository offered while resolving `ghp` / `gha`: ↩ (or ⇥) completes
+/// the query with `owner/name `.
+pub fn candidate_item(repo: &Repo, now: i64) -> Item {
+    let pushed = repo
+        .pushed_at
+        .as_deref()
+        .map(|pushed| time::ago_iso(pushed, now))
+        .filter(|ago| !ago.is_empty())
+        .map(|ago| format!("pushed {ago}"))
+        .unwrap_or_default();
+
+    Item::new(repo.name_with_owner.clone())
+        .subtitle(subtitle(vec![
+            "↩ choose this repository".to_owned(),
+            repo.description.clone().unwrap_or_default(),
+            pushed,
+        ]))
+        .autocomplete(format!("{} ", repo.name_with_owner))
+        .valid(false)
+}
+
+/// A pull request: ↩ open, ⌘ "Files changed", ⌥ copy the URL, ⌃ the Jira
+/// ticket named in its title or branch. `show_repo` prefixes the title with
+/// the repository (lists across repositories).
+pub fn pr_item(pr: &Pr, show_repo: bool, now: i64) -> Item {
+    let title = if show_repo {
+        format!("{} · {}", pr.repo, pr.title)
+    } else {
+        pr.title.clone()
+    };
+
+    let state = match pr.state.as_str() {
+        "MERGED" => "merged",
+        "CLOSED" => "closed",
+        _ if pr.is_draft => "draft",
+        _ => "",
+    };
+
+    let updated = time::ago_iso(&pr.updated_at, now);
+
+    let subtitle = subtitle(vec![
+        format!("#{}", pr.number),
+        pr.author.clone().unwrap_or_else(|| "ghost".to_owned()),
+        format!("{}→{}", pr.head, pr.base),
+        state.to_owned(),
+        pr.checks
+            .map(|checks| format!("CI {}", checks.icon()))
+            .unwrap_or_default(),
+        pr.review_label().unwrap_or_default().to_owned(),
+        if updated.is_empty() {
+            String::new()
+        } else {
+            format!("updated {updated}")
+        },
+    ]);
+
+    let ticket = jira::pr_key(&pr.title, &pr.head);
+    let jira_subtitle = match &ticket {
+        Some(key) => format!("Open {key} in Jira"),
+        None => "No Jira ticket in the title or branch".to_owned(),
+    };
+
+    Item::new(title)
+        .subtitle(subtitle)
+        .arg(
+            Action::Open {
+                url: pr.url.clone(),
+            }
+            .to_arg(),
+        )
+        .copy_text(pr.url.clone())
+        .modifier(modifier(
+            Key::Command,
+            "Open “Files changed”",
+            &Action::Open {
+                url: pr.files_url(),
+            },
+        ))
+        .modifier(modifier(
+            Key::Option,
+            "Copy the URL",
+            &Action::Copy {
+                url: pr.url.clone(),
+            },
+        ))
+        .modifier(modifier(
+            Key::Control,
+            &jira_subtitle,
+            &Action::Jira { key: ticket },
         ))
 }
 

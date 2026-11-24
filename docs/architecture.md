@@ -8,6 +8,7 @@ object in the Alfred workflow graph:
 | Subcommand                  | Alfred object                | Keyword | Responsibility |
 | --------------------------- | ---------------------------- | ------- | -------------- |
 | `alfred-gh repos [query]`   | Script Filter                | `gho`   | Repositories of `GH_OWNERS`, ranked. |
+| `alfred-gh prs [query]`     | Script Filter                | `ghp`   | Pull requests of one repository (resolved from `owner/name` or a bare name). |
 | `alfred-gh run <arg>`       | Run Script (`action.script`) | —       | Decode the selected item's `arg` and perform it. |
 | `alfred-gh refresh <key>`   | — (spawned detached)         | —       | Rewrite one stale cache entry. |
 
@@ -27,9 +28,11 @@ with `action::execute`.
 | `copy`       | `<url>`                 | Copy the URL. |
 | `clone-open` | `<owner/repo> <editor>` | `gh repo clone` into `~/Workspace/github.com/<owner>/<repo>` if missing (notifies), then `open -a <editor> <path>`. |
 | `refresh`    | `all`                   | Clear every cache entry. |
+| `reopen`     | `<query>`               | Show Alfred with the query typed in (`ghp owner/repo `): drill-downs. Its trailing space is kept. |
+| `jira`       | `[key]`                 | Open `JIRA_URL` + key. No key, or no `JIRA_URL`: only a notification. |
 
 Fields are ordered so that only the last one may contain spaces (application
-names); URLs and `owner/repo` never do. `clone-open` only accepts a plain
+names, Alfred queries); URLs and `owner/repo` never do. `clone-open` only accepts a plain
 `owner/repo` (no leading `-` or `.`, no extra `/`), so it can be neither a
 flag for `gh` nor a path escape. A round-trip test covers every verb.
 
@@ -85,6 +88,18 @@ sequenceDiagram
   Each becomes an invalid item with the fix; the SSO item opens the token
   authorization page. One owner failing never hides the others; global
   errors (missing `gh`, not authenticated) are shown once.
+- **Repository resolution** (`ghp`, `ranking::resolve_repo`): `owner/name`
+  resolves to itself without listing anything (GitHub's casing is taken from
+  the cache when present), so repositories outside `GH_OWNERS` work too; a
+  bare name resolves when exactly one cached repository has it; anything
+  else lists matching repositories as invalid items whose `autocomplete` is
+  `owner/name ` (↩ completes the query).
+- **Pull requests.** One fixed query per state set (`OPEN_PRS_QUERY`,
+  `MERGED_PRS_QUERY`, `ALL_PRS_QUERY`): list variables cannot travel as raw
+  `-f` fields. The 50 most recently updated are fetched and filtered in Rust
+  (title, author, head branch, number). Checks come from the head commit's
+  `statusCheckRollup`. The Jira key (`[A-Z][A-Z0-9]+-\d+`, `jira::pr_key`) is
+  searched in the title, then the head branch.
 - **SSO heuristic.** An organization returning no repository while another
   owner returns some is shown as "token not authorized for SSO", and is not
   cached.
@@ -97,6 +112,7 @@ Entries are JSON files under `$alfred_workflow_cache`, one per `cache::Key`:
 | -------------- | -------------------- | ---- |
 | `viewer`       | `viewer.json`        | 1 h  |
 | `repos <owner>`| `repos-<owner>.json` | 1 h  |
+| `prs <owner/name> <state>` | `prs-<owner>_<name>-<state>.json` | 60 s |
 
 Each file stores the value and its `fetched_at` Unix time; freshness is
 computed against an injected clock, so the logic is unit-tested without

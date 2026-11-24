@@ -68,10 +68,14 @@ export alfred_workflow_cache=$(mktemp -d) GH_OWNERS=my-org,my-user
 
 $B repos "" | python3 -m json.tool        # gho (first run fetches, next ones hit the cache)
 $B repos "m:api" | python3 -m json.tool   # gho, one owner
+$B prs "api" | python3 -m json.tool       # ghp: candidates, or the PRs if unique
+$B prs "my-org/api state:merged fix" | python3 -m json.tool
 
 # Actions take the `arg` of an item (see docs/architecture.md):
 $B run "copy https://github.com"
 $B run "clone-open my-org/api Zed"
+$B run "reopen ghp my-org/api "
+JIRA_URL=https://example.atlassian.net/browse/ $B run "jira ABC-123"
 $B run "refresh all"
 ```
 
@@ -96,7 +100,9 @@ fictitious owners `acme-org` (organization) and `octo-user` (user).
 | `tests/owners_test.rs`  | `GH_OWNERS` parsing, owner kinds, search qualifiers, owner prefixes and collisions. |
 | `tests/cache_test.rs`   | Fresh / stale / missing / corrupted entries with an injected clock, atomic writes, locks (exclusive, expiring), clearing, keys and TTLs. |
 | `tests/repos_test.rs`   | Repository page parsing, pagination merge (cursor in the argv), the `gho` listing: per-owner cache entries, fresh/stale serving, background refresh spawn and lock, failed refresh back-off, one owner failing, SSO (error and empty organization), missing `gh`, not authenticated, rate limit, default owner. |
-| `tests/ranking_test.rs` | Ranking tiers, push-date ties, archived last, empty query. |
+| `tests/prs_test.rs`     | Pull request parsing (checks, review state, deleted authors), one fixed query per state with its exact argv, the `ghp` listing: `owner/name` without listing repos, unique bare name, ambiguous/partial/empty names as candidates, unknown repository, filters, `state:`, stale refresh, errors and empty lists. |
+| `tests/jira_test.rs`    | Ticket key extraction and title-over-branch priority. |
+| `tests/ranking_test.rs` | Ranking tiers, push-date ties, archived last, empty query, repository resolution (exact / bare / ambiguous / partial / unknown), pull request filters. |
 | `tests/query_test.rs`   | Query parsing of every keyword. |
 | `tests/local_test.rs`   | Clone paths and `owner/repo` validation. |
 | `tests/time_test.rs`    | ISO 8601 parsing, relative ages, durations. |

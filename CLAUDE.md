@@ -17,7 +17,8 @@ doc comments before committing. `cargo test --all`,
 An Alfred (macOS) workflow written in Rust to navigate GitHub. A single binary,
 `alfred-gh`, backs every object of the Alfred graph:
 
-- **Script Filters**, one per keyword: `repos` (`gho`). They print Alfred JSON.
+- **Script Filters**, one per keyword: `repos` (`gho`), `prs` (`ghp`). They
+  print Alfred JSON.
 - One **Run Script**, `alfred-gh run <arg>`, connected to every script filter
   for every modifier used. `arg` is an encoded `action::Action`
   (`"<verb> <payload>"`, see `docs/architecture.md`). Whatever it prints feeds a
@@ -80,7 +81,10 @@ process without waiting (stale-cache refreshes).
   `App::refresh`, one method per script filter.
 - `repos.rs` — `repositoryOwner(login:)` pages (`ownerAffiliations: [OWNER]`),
   pagination, `Repo` / `OwnerRepos`.
-- `ranking.rs` — repository ranking. `query.rs` — keyword query parsing.
+- `prs.rs` — `Pr`, one fixed query per state set (`OPEN_PRS_QUERY`…), CI
+  rollup and review state. `jira.rs` — ticket key extraction.
+- `ranking.rs` — repository ranking, repository resolution (`Resolution`),
+  pull request filtering. `query.rs` — keyword query parsing.
 - `local.rs` — clone path `~/Workspace/github.com/<owner>/<repo>` and
   `owner/repo` validation. `time.rs` — ISO 8601 parsing, relative ages.
 - `action.rs` — the `arg` protocol (`Action::to_arg` / `Action::parse`) and
@@ -108,7 +112,8 @@ process without waiting (stale-cache refreshes).
   has its own entry and TTL (`Key::ttl`). A failed background refresh keeps
   its lock until it expires (60 s), which is the back-off. An organization
   returning no repository is never cached (likely SSO; shows the SSO item).
-- **Keywords are fixed.** `tests/plist_test.rs` pins the keyword → subcommand
+- **Keywords are fixed.** Drill-downs (`reopen`) build queries from
+  `alfred::PRS_KEYWORD`. `tests/plist_test.rs` pins the keyword → subcommand
   map, the modifier connections and the user configuration variables: update it
   with any keyword, modifier or variable change.
 - **Deploying**: `scripts/deploy.sh` copies the build over the installed

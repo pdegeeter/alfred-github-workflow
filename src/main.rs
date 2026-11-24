@@ -2,6 +2,7 @@
 //!
 //! Subcommands, dispatched by Alfred:
 //!   * `repos [query]` — script filter `gho`: repositories of the configured owners.
+//!   * `prs [query]`   — script filter `ghp`: pull requests of one repository.
 //!   * `run <arg>`     — Run Script action: perform the selected item.
 //!   * `refresh <key>` — rewrite one stale cache entry (spawned detached by the
 //!     script filters, never by Alfred directly).
@@ -41,10 +42,11 @@ fn main() -> ExitCode {
 
     match command.as_str() {
         "repos" => output(app.repos(&arg)),
+        "prs" => output(app.prs(&arg)),
         "run" => run(&app, &arg),
         "refresh" => refresh(&app, &arg),
         other => {
-            eprintln!("unknown command: `{other}` (expected repos, run or refresh)");
+            eprintln!("unknown command: `{other}` (expected repos, prs, run or refresh)");
 
             ExitCode::FAILURE
         }
@@ -74,6 +76,7 @@ fn run(app: &App, arg: &str) -> ExitCode {
         home: app.home.clone(),
         cache: &app.cache,
         exists: &|path: &Path| path.exists(),
+        jira_url: &app.settings.jira_url,
     };
 
     let result = Action::parse(arg).and_then(|parsed| action::execute(&ctx, &parsed));

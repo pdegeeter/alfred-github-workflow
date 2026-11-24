@@ -5,6 +5,7 @@ use std::fs;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use alfred_gh::cache::{Cache, Entry, Key};
+use alfred_gh::prs::PrState;
 
 fn at(seconds: u64) -> SystemTime {
     UNIX_EPOCH + Duration::from_secs(seconds)
@@ -116,7 +117,14 @@ fn clear_removes_entries_and_locks() {
 
 #[test]
 fn keys_round_trip_and_make_safe_file_names() {
-    for key in [Key::Viewer, repos_key()] {
+    for key in [
+        Key::Viewer,
+        repos_key(),
+        Key::Prs {
+            repo: "acme-org/api".to_owned(),
+            state: PrState::Merged,
+        },
+    ] {
         assert_eq!(Key::parse(&key.to_arg()).unwrap(), key);
     }
 
@@ -136,4 +144,12 @@ fn keys_round_trip_and_make_safe_file_names() {
 fn ttls_follow_the_kind_of_data() {
     assert_eq!(Key::Viewer.ttl(), Duration::from_secs(3_600));
     assert_eq!(repos_key().ttl(), Duration::from_secs(3_600));
+    assert_eq!(
+        Key::Prs {
+            repo: "acme-org/api".to_owned(),
+            state: PrState::Open
+        }
+        .ttl(),
+        Duration::from_secs(60)
+    );
 }

@@ -1,0 +1,66 @@
+{
+  "data": {
+    "repository": {
+      "pullRequests": {
+        "nodes": [
+          {
+            "number": 42,
+            "title": "[PAY-1234] Fix rounding of invoice totals",
+            "url": "https://github.com/acme-org/api/pull/42",
+            "state": "OPEN",
+            "isDraft": false,
+            "updatedAt": "2026-11-24T21:00:00Z",
+            "headRefName": "fix/invoice-rounding",
+            "baseRefName": "main",
+            "reviewDecision": "APPROVED",
+            "author": { "login": "octo-user" },
+            "repository": { "nameWithOwner": "acme-org/api" },
+            "commits": { "nodes": [ { "commit": { "statusCheckRollup": { "state": "SUCCESS" } } } ] }
+          },
+          {
+            "number": 41,
+            "title": "Add retries to the webhook sender",
+            "url": "https://github.com/acme-org/api/pull/41",
+            "state": "OPEN",
+            "isDraft": true,
+            "updatedAt": "2026-11-24T12:00:00Z",
+            "headRefName": "feat/OPS-77-webhook-retries",
+            "baseRefName": "main",
+            "reviewDecision": "REVIEW_REQUIRED",
+            "author": { "login": "dev-two" },
+            "repository": { "nameWithOwner": "acme-org/api" },
+            "commits": { "nodes": [ { "commit": { "statusCheckRollup": { "state": "PENDING" } } } ] }
+          },
+          {
+            "number": 40,
+            "title": "chore(deps): bump the npm group",
+            "url": "https://github.com/acme-org/api/pull/40",
+            "state": "OPEN",
+            "isDraft": false,
+            "updatedAt": "2026-11-20T08:00:00Z",
+            "headRefName": "dependabot/npm_and_yarn/npm-group-1a2b3c",
+            "baseRefName": "staging",
+            "reviewDecision": "CHANGES_REQUESTED",
+            "author": { "login": "dependabot" },
+            "repository": { "nameWithOwner": "acme-org/api" },
+            "commits": { "nodes": [ { "commit": { "statusCheckRollup": { "state": "FAILURE" } } } ] }
+          },
+          {
+            "number": 12,
+            "title": "Initial import",
+            "url": "https://github.com/acme-org/api/pull/12",
+            "state": "MERGED",
+            "isDraft": false,
+            "updatedAt": "2025-03-01T08:00:00Z",
+            "headRefName": "import",
+            "baseRefName": "main",
+            "reviewDecision": null,
+            "author": null,
+            "repository": { "nameWithOwner": "acme-org/api" },
+            "commits": { "nodes": [ { "commit": { "statusCheckRollup": null } } ] }
+          }
+        ]
+      }
+    }
+  }
+}
