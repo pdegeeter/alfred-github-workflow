@@ -70,6 +70,8 @@ $B repos "" | python3 -m json.tool        # gho (first run fetches, next ones hi
 $B repos "m:api" | python3 -m json.tool   # gho, one owner
 $B prs "api" | python3 -m json.tool       # ghp: candidates, or the PRs if unique
 $B prs "my-org/api state:merged fix" | python3 -m json.tool
+$B workflows "my-org/api " | python3 -m json.tool          # gha
+$B workflows "my-org/api runs:12345" | python3 -m json.tool  # gha, one workflow's runs
 
 # Actions take the `arg` of an item (see docs/architecture.md):
 $B run "copy https://github.com"
@@ -101,6 +103,7 @@ fictitious owners `acme-org` (organization) and `octo-user` (user).
 | `tests/cache_test.rs`   | Fresh / stale / missing / corrupted entries with an injected clock, atomic writes, locks (exclusive, expiring), clearing, keys and TTLs. |
 | `tests/repos_test.rs`   | Repository page parsing, pagination merge (cursor in the argv), the `gho` listing: per-owner cache entries, fresh/stale serving, background refresh spawn and lock, failed refresh back-off, one owner failing, SSO (error and empty organization), missing `gh`, not authenticated, rate limit, default owner. |
 | `tests/prs_test.rs`     | Pull request parsing (checks, review state, deleted authors), one fixed query per state with its exact argv, the `ghp` listing: `owner/name` without listing repos, unique bare name, ambiguous/partial/empty names as candidates, unknown repository, filters, `state:`, stale refresh, errors and empty lists. |
+| `tests/workflows_test.rs` | Workflow and run parsing, last run per workflow, run status and duration, branch percent-encoding, the exact REST paths, invalid repositories never reaching `gh`, the `gha` listing (cached default branch, status icons, ⏸, filters), `runs:<id>`, stale refresh, errors, cache keys. |
 | `tests/jira_test.rs`    | Ticket key extraction and title-over-branch priority. |
 | `tests/ranking_test.rs` | Ranking tiers, push-date ties, archived last, empty query, repository resolution (exact / bare / ambiguous / partial / unknown), pull request filters. |
 | `tests/query_test.rs`   | Query parsing of every keyword. |

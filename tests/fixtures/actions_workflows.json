@@ -1,0 +1,41 @@
+{
+  "total_count": 3,
+  "workflows": [
+    {
+      "id": 1001,
+      "node_id": "W_1001",
+      "name": "CI",
+      "path": ".github/workflows/ci.yml",
+      "state": "active",
+      "created_at": "2026-11-18T20:56:26.000+01:00",
+      "updated_at": "2026-11-18T20:56:26.000+01:00",
+      "url": "https://api.github.com/repos/acme-org/api/actions/workflows/1001",
+      "html_url": "https://github.com/acme-org/api/blob/main/.github/workflows/ci.yml",
+      "badge_url": "https://github.com/acme-org/api/workflows/CI/badge.svg"
+    },
+    {
+      "id": 1002,
+      "node_id": "W_1002",
+      "name": "release-please",
+      "path": ".github/workflows/release-please.yml",
+      "state": "active",
+      "created_at": "2026-11-18T20:56:26.000+01:00",
+      "updated_at": "2026-11-18T20:56:26.000+01:00",
+      "url": "https://api.github.com/repos/acme-org/api/actions/workflows/1002",
+      "html_url": "https://github.com/acme-org/api/blob/main/.github/workflows/release-please.yml",
+      "badge_url": "https://github.com/acme-org/api/workflows/release-please/badge.svg"
+    },
+    {
+      "id": 1003,
+      "node_id": "W_1003",
+      "name": "Nightly",
+      "path": ".github/workflows/nightly.yml",
+      "state": "disabled_manually",
+      "created_at": "2026-11-18T20:56:26.000+01:00",
+      "updated_at": "2026-11-18T20:56:26.000+01:00",
+      "url": "https://api.github.com/repos/acme-org/api/actions/workflows/1003",
+      "html_url": "https://github.com/acme-org/api/blob/main/.github/workflows/nightly.yml",
+      "badge_url": "https://github.com/acme-org/api/workflows/Nightly/badge.svg"
+    }
+  ]
+}

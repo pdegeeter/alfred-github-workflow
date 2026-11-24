@@ -1,0 +1,49 @@
+{
+  "total_count": 2,
+  "workflow_runs": [
+    {
+      "id": 9004,
+      "name": "CI",
+      "display_title": "Add retries",
+      "workflow_id": 1001,
+      "head_branch": "feat/retries",
+      "head_sha": "0123456789abcdef0123456789abcdef01234567",
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "html_url": "https://github.com/acme-org/api/actions/runs/9004",
+      "run_started_at": "2026-11-24T22:00:00Z",
+      "created_at": "2026-11-24T22:00:00Z",
+      "updated_at": "2026-11-24T22:00:30Z",
+      "run_number": 32,
+      "run_attempt": 1,
+      "path": ".github/workflows/ci.yml",
+      "actor": {
+        "login": "dev-two",
+        "type": "User"
+      }
+    },
+    {
+      "id": 9001,
+      "name": "CI",
+      "display_title": "Bump deps (#40)",
+      "workflow_id": 1001,
+      "head_branch": "main",
+      "head_sha": "0123456789abcdef0123456789abcdef01234567",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/acme-org/api/actions/runs/9001",
+      "run_started_at": "2026-11-24T20:00:00Z",
+      "created_at": "2026-11-24T20:00:00Z",
+      "updated_at": "2026-11-24T20:03:12Z",
+      "run_number": 30,
+      "run_attempt": 1,
+      "path": ".github/workflows/ci.yml",
+      "actor": {
+        "login": "dev-two",
+        "type": "User"
+      }
+    }
+  ]
+}

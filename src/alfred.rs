@@ -15,12 +15,16 @@ use crate::jira;
 use crate::prs::Pr;
 use crate::repos::Repo;
 use crate::time;
+use crate::workflows::{Run, Workflow};
 
 /// Delay before Alfred reruns a script filter whose cache is being refreshed.
 pub const RERUN: Duration = Duration::from_millis(500);
 
 /// Keyword of the pull requests script filter, reopened by drill-downs.
 pub const PRS_KEYWORD: &str = "ghp";
+
+/// Keyword of the Actions script filter, reopened by drill-downs.
+pub const WORKFLOWS_KEYWORD: &str = "gha";
 
 /// Item shown in place of a list when something went wrong.
 pub fn error_item(title: &str, message: &str) -> Item {
@@ -139,6 +143,109 @@ pub fn repo_item(repo: &Repo, editor: &str, now: i64) -> Item {
                 query: format!("{PRS_KEYWORD} {} ", repo.name_with_owner),
             },
         ))
+        .modifier(
+            Modifier::new_multi([Key::Command, Key::Shift])
+                .subtitle("Actions workflows")
+                .arg(
+                    Action::Reopen {
+                        query: format!("{WORKFLOWS_KEYWORD} {} ", repo.name_with_owner),
+                    }
+                    .to_arg(),
+                ),
+        )
+}
+
+fn run_details(run: &Run, now: i64) -> Vec<String> {
+    vec![
+        run.branch.clone(),
+        run.event.clone(),
+        run.actor.clone().unwrap_or_default(),
+        run.duration(now).map(time::duration).unwrap_or_default(),
+        time::ago_iso(&run.started_at, now),
+    ]
+}
+
+/// A workflow with the status of its last run on the default branch:
+/// ↩ its runs page, ⌘ the last run, ⌥ copy the runs page URL, ⌃ list its
+/// runs in Alfred.
+pub fn workflow_item(repo: &str, workflow: &Workflow, last: Option<&Run>, now: i64) -> Item {
+    let runs_url = workflow.runs_url(repo);
+
+    let mut details = vec![workflow.path.clone()];
+
+    let status = if workflow.is_disabled() {
+        "⏸ disabled".to_owned()
+    } else {
+        match last {
+            Some(run) => {
+                details.extend(run_details(run, now));
+                run.status().icon().to_owned()
+            }
+            None => "no recent run".to_owned(),
+        }
+    };
+
+    details.insert(0, status);
+
+    let (last_url, last_subtitle) = match last {
+        Some(run) => (run.url.clone(), format!("Open run #{}", run.run_number)),
+        None => (
+            runs_url.clone(),
+            "No recent run: open the runs page".to_owned(),
+        ),
+    };
+
+    Item::new(workflow.name.clone())
+        .subtitle(subtitle(details))
+        .arg(
+            Action::Open {
+                url: runs_url.clone(),
+            }
+            .to_arg(),
+        )
+        .copy_text(runs_url.clone())
+        .modifier(modifier(
+            Key::Command,
+            &last_subtitle,
+            &Action::Open { url: last_url },
+        ))
+        .modifier(modifier(
+            Key::Option,
+            "Copy the URL",
+            &Action::Copy { url: runs_url },
+        ))
+        .modifier(modifier(
+            Key::Control,
+            "List its runs",
+            &Action::Reopen {
+                query: format!("{WORKFLOWS_KEYWORD} {repo} runs:{} ", workflow.id),
+            },
+        ))
+}
+
+/// A workflow run: ↩ open, ⌥ copy the URL.
+pub fn run_item(run: &Run, now: i64) -> Item {
+    Item::new(format!(
+        "{} #{} · {}",
+        run.status().icon(),
+        run.run_number,
+        run.title
+    ))
+    .subtitle(subtitle(run_details(run, now)))
+    .arg(
+        Action::Open {
+            url: run.url.clone(),
+        }
+        .to_arg(),
+    )
+    .copy_text(run.url.clone())
+    .modifier(modifier(
+        Key::Option,
+        "Copy the URL",
+        &Action::Copy {
+            url: run.url.clone(),
+        },
+    ))
 }
 
 /// A repository offered while resolving `ghp` / `gha`: ↩ (or ⇥) completes

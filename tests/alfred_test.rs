@@ -7,6 +7,7 @@ use alfred_gh::alfred;
 use alfred_gh::gh::GhError;
 use alfred_gh::prs::{Checks, Pr};
 use alfred_gh::repos::Repo;
+use alfred_gh::workflows::{Run, Workflow};
 use serde_json::Value;
 
 fn json(output: &powerpack::Output) -> Value {
@@ -95,6 +96,10 @@ fn a_repo_item_opens_clones_and_copies() {
                 "copy https://github.com/acme-org/api".to_owned()
             ),
             ("cmd".to_owned(), "clone-open acme-org/api Zed".to_owned()),
+            (
+                "cmd+shift".to_owned(),
+                "reopen gha acme-org/api ".to_owned()
+            ),
             ("ctrl".to_owned(), "reopen ghp acme-org/api ".to_owned()),
         ]
     );
@@ -163,6 +168,69 @@ fn a_pr_item_across_repositories_names_its_repository() {
     assert_eq!(item["mods"]["ctrl"]["arg"], "jira");
 }
 
+fn workflow() -> Workflow {
+    Workflow {
+        id: 1001,
+        name: "CI".to_owned(),
+        path: ".github/workflows/ci.yml".to_owned(),
+        state: "active".to_owned(),
+    }
+}
+
+fn run() -> Run {
+    Run {
+        id: 9001,
+        workflow_id: 1001,
+        run_number: 30,
+        title: "Bump deps".to_owned(),
+        branch: "main".to_owned(),
+        event: "push".to_owned(),
+        actor: Some("dev-two".to_owned()),
+        status: "completed".to_owned(),
+        conclusion: Some("success".to_owned()),
+        url: "https://github.com/acme-org/api/actions/runs/9001".to_owned(),
+        started_at: "2026-11-24T20:00:00Z".to_owned(),
+        updated_at: "2026-11-24T20:03:12Z".to_owned(),
+    }
+}
+
+#[test]
+fn a_workflow_without_recent_run_opens_its_runs_page_everywhere() {
+    let item = item_json(alfred::workflow_item(
+        "acme-org/api",
+        &workflow(),
+        None,
+        NOW,
+    ));
+
+    assert_eq!(item["subtitle"], "no recent run · .github/workflows/ci.yml");
+    assert_eq!(
+        item["arg"],
+        "open https://github.com/acme-org/api/actions/workflows/ci.yml"
+    );
+    assert_eq!(item["mods"]["cmd"]["arg"], item["arg"]);
+    assert_eq!(
+        item["mods"]["alt"]["arg"],
+        "copy https://github.com/acme-org/api/actions/workflows/ci.yml"
+    );
+}
+
+#[test]
+fn a_workflow_with_a_last_run_shows_it() {
+    let item = item_json(alfred::workflow_item(
+        "acme-org/api",
+        &workflow(),
+        Some(&run()),
+        NOW,
+    ));
+
+    assert_eq!(
+        item["subtitle"],
+        "✅ · .github/workflows/ci.yml · main · push · dev-two · 3m 12s · 4h ago"
+    );
+    assert_eq!(item["mods"]["cmd"]["subtitle"], "Open run #30");
+}
+
 #[test]
 fn a_candidate_completes_the_query() {
     let item = item_json(alfred::candidate_item(&repo(), NOW));
@@ -192,6 +260,8 @@ fn every_modifier_arg_decodes() {
         alfred::refresh_item(),
         alfred::sso_item("acme-org"),
         alfred::pr_item(&pr(), true, NOW),
+        alfred::workflow_item("acme-org/api", &workflow(), None, NOW),
+        alfred::run_item(&run(), NOW),
     ];
 
     for item in items {

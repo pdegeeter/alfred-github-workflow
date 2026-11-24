@@ -21,6 +21,7 @@ repositories come last and say so.
   `gh repo clone` first if it is missing
 - <kbd>⌥</kbd><kbd>↩</kbd> copy the URL
 - <kbd>⌃</kbd><kbd>↩</kbd> its pull requests (reopens Alfred on `ghp owner/repo `)
+- <kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd> its Actions workflows (reopens Alfred on `gha owner/repo `)
 - the last item, **Refresh cache**, forgets everything cached
 
 If an organization's repositories are missing because `gh` is not authorized
@@ -44,6 +45,23 @@ Each item shows `#number · author · head→base · draft · CI ✅❌🟡 · r
   title or the head branch, under `JIRA_URL` (a notification says when there
   is none, or when `JIRA_URL` is not set)
 
+### Actions — `gha`
+
+`gha <repo> [query]` lists a repository's workflows with the status of their
+last run on the default branch: ✅ success, ❌ failure, 🟡 in progress,
+⏸ disabled (⚪ cancelled or skipped, “no recent run” when none of the latest
+100 runs is theirs). The query filters by name or path. `<repo>` resolves as
+for `ghp`.
+
+- <kbd>↩</kbd> open the workflow's runs page
+- <kbd>⌘</kbd><kbd>↩</kbd> open the last run
+- <kbd>⌥</kbd><kbd>↩</kbd> copy the runs page URL
+- <kbd>⌃</kbd><kbd>↩</kbd> list its runs (reopens Alfred on `gha owner/repo runs:<id>`)
+
+`gha <repo> runs:<workflow id> [query]` lists the last 10 runs of one workflow
+(branch, event, actor, duration, status); the query filters by title or
+branch. <kbd>↩</kbd> opens a run, <kbd>⌥</kbd><kbd>↩</kbd> copies its URL.
+
 ## How it works
 
 - Every call goes through the `gh` CLI (`gh api graphql`, `gh api`): it
@@ -51,7 +69,8 @@ Each item shows `#number · author · head→base · draft · CI ✅❌🟡 · r
 - Results are cached under Alfred's workflow cache folder. A fresh cache is
   shown at once; a stale one too, while a background process refreshes it and
   Alfred reloads the list. Repositories are cached for 1 hour per owner, pull
-  requests for 1 minute per repository and state.
+  requests for 1 minute per repository and state, workflows for 10 minutes
+  and runs for 30 seconds.
 
 ## Configuration
 

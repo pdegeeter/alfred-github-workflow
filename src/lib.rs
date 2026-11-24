@@ -19,3 +19,4 @@ pub mod ranking;
 pub mod repos;
 pub mod runner;
 pub mod time;
+pub mod workflows;

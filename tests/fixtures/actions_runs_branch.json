@@ -1,0 +1,71 @@
+{
+  "total_count": 3,
+  "workflow_runs": [
+    {
+      "id": 9003,
+      "name": "CI",
+      "display_title": "Fix rounding (#42)",
+      "workflow_id": 1001,
+      "head_branch": "main",
+      "head_sha": "0123456789abcdef0123456789abcdef01234567",
+      "event": "push",
+      "status": "in_progress",
+      "conclusion": null,
+      "html_url": "https://github.com/acme-org/api/actions/runs/9003",
+      "run_started_at": "2026-11-24T23:58:00Z",
+      "created_at": "2026-11-24T23:58:00Z",
+      "updated_at": "2026-11-24T23:59:00Z",
+      "run_number": 31,
+      "run_attempt": 1,
+      "path": ".github/workflows/ci.yml",
+      "actor": {
+        "login": "octo-user",
+        "type": "User"
+      }
+    },
+    {
+      "id": 9002,
+      "name": "release-please",
+      "display_title": "Fix rounding (#42)",
+      "workflow_id": 1002,
+      "head_branch": "main",
+      "head_sha": "0123456789abcdef0123456789abcdef01234567",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "failure",
+      "html_url": "https://github.com/acme-org/api/actions/runs/9002",
+      "run_started_at": "2026-11-24T23:50:00Z",
+      "created_at": "2026-11-24T23:50:00Z",
+      "updated_at": "2026-11-24T23:50:45Z",
+      "run_number": 12,
+      "run_attempt": 1,
+      "path": ".github/workflows/release-please.yml",
+      "actor": {
+        "login": "octo-user",
+        "type": "User"
+      }
+    },
+    {
+      "id": 9001,
+      "name": "CI",
+      "display_title": "Bump deps (#40)",
+      "workflow_id": 1001,
+      "head_branch": "main",
+      "head_sha": "0123456789abcdef0123456789abcdef01234567",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/acme-org/api/actions/runs/9001",
+      "run_started_at": "2026-11-24T20:00:00Z",
+      "created_at": "2026-11-24T20:00:00Z",
+      "updated_at": "2026-11-24T20:03:12Z",
+      "run_number": 30,
+      "run_attempt": 1,
+      "path": ".github/workflows/ci.yml",
+      "actor": {
+        "login": "dev-two",
+        "type": "User"
+      }
+    }
+  ]
+}

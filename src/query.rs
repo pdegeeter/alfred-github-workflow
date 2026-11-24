@@ -28,6 +28,33 @@ pub fn parse_repo(query: &str) -> RepoQuery {
     }
 }
 
+/// The rest of a `gha` query.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkflowQuery {
+    /// `runs:<workflow_id>`: list that workflow's runs instead.
+    pub runs_of: Option<u64>,
+    /// Text filtering workflows by name or path (or runs by title/branch).
+    pub text: String,
+}
+
+/// Parse the rest of a `gha` query. A malformed `runs:` is kept as text.
+pub fn parse_workflow_filter(rest: &str) -> WorkflowQuery {
+    let mut runs_of = None;
+    let mut words = Vec::new();
+
+    for word in rest.split_whitespace() {
+        match word.strip_prefix("runs:").and_then(|id| id.parse().ok()) {
+            Some(id) => runs_of = Some(id),
+            None => words.push(word),
+        }
+    }
+
+    WorkflowQuery {
+        runs_of,
+        text: words.join(" "),
+    }
+}
+
 /// The rest of a `ghp` query: a `state:open|merged|all` filter (default
 /// open) and the text to filter by. An unknown state is kept as text.
 pub fn parse_pr_filter(rest: &str) -> (PrState, String) {

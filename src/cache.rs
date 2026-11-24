@@ -35,6 +35,12 @@ pub enum Key {
     Repos { owner: String },
     /// The pull requests of one repository (`owner/name`) in one state.
     Prs { repo: String, state: PrState },
+    /// The Actions workflows of one repository and its default branch.
+    Workflows { repo: String },
+    /// The latest runs of one repository on one branch (last run per workflow).
+    BranchRuns { repo: String, branch: String },
+    /// The latest runs of one workflow.
+    Runs { repo: String, workflow_id: u64 },
 }
 
 impl Key {
@@ -44,6 +50,9 @@ impl Key {
             Key::Viewer => "viewer".to_owned(),
             Key::Repos { owner } => format!("repos-{owner}"),
             Key::Prs { repo, state } => format!("prs-{repo}-{}", state.as_str()),
+            Key::Workflows { repo } => format!("workflows-{repo}"),
+            Key::BranchRuns { repo, branch } => format!("branch-runs-{repo}-{branch}"),
+            Key::Runs { repo, workflow_id } => format!("runs-{repo}-{workflow_id}"),
         };
 
         raw.chars()
@@ -62,6 +71,8 @@ impl Key {
         match self {
             Key::Viewer | Key::Repos { .. } => Duration::from_secs(3_600),
             Key::Prs { .. } => Duration::from_secs(60),
+            Key::Workflows { .. } => Duration::from_secs(600),
+            Key::BranchRuns { .. } | Key::Runs { .. } => Duration::from_secs(30),
         }
     }
 
@@ -72,6 +83,9 @@ impl Key {
             Key::Viewer => "viewer".to_owned(),
             Key::Repos { owner } => format!("repos {owner}"),
             Key::Prs { repo, state } => format!("prs {repo} {}", state.as_str()),
+            Key::Workflows { repo } => format!("workflows {repo}"),
+            Key::BranchRuns { repo, branch } => format!("branch-runs {repo} {branch}"),
+            Key::Runs { repo, workflow_id } => format!("runs {repo} {workflow_id}"),
         }
     }
 
@@ -88,6 +102,19 @@ impl Key {
                 repo: (*repo).to_owned(),
                 state: PrState::parse(state)
                     .ok_or_else(|| anyhow!("invalid pull request state: {state:?}"))?,
+            },
+            ["workflows", repo] => Key::Workflows {
+                repo: (*repo).to_owned(),
+            },
+            ["branch-runs", repo, branch] => Key::BranchRuns {
+                repo: (*repo).to_owned(),
+                branch: (*branch).to_owned(),
+            },
+            ["runs", repo, id] => Key::Runs {
+                repo: (*repo).to_owned(),
+                workflow_id: id
+                    .parse()
+                    .map_err(|_| anyhow!("invalid workflow id: {id:?}"))?,
             },
             _ => bail!("invalid cache key: {arg:?}"),
         };

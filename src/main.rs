@@ -3,6 +3,7 @@
 //! Subcommands, dispatched by Alfred:
 //!   * `repos [query]` — script filter `gho`: repositories of the configured owners.
 //!   * `prs [query]`   — script filter `ghp`: pull requests of one repository.
+//!   * `workflows [query]` — script filter `gha`: Actions workflows and runs.
 //!   * `run <arg>`     — Run Script action: perform the selected item.
 //!   * `refresh <key>` — rewrite one stale cache entry (spawned detached by the
 //!     script filters, never by Alfred directly).
@@ -43,10 +44,13 @@ fn main() -> ExitCode {
     match command.as_str() {
         "repos" => output(app.repos(&arg)),
         "prs" => output(app.prs(&arg)),
+        "workflows" => output(app.workflows(&arg)),
         "run" => run(&app, &arg),
         "refresh" => refresh(&app, &arg),
         other => {
-            eprintln!("unknown command: `{other}` (expected repos, prs, run or refresh)");
+            eprintln!(
+                "unknown command: `{other}` (expected repos, prs, workflows, run or refresh)"
+            );
 
             ExitCode::FAILURE
         }

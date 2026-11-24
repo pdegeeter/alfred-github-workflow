@@ -20,6 +20,7 @@ use crate::ranking::{self, Resolution};
 use crate::repos::{self, OwnerRepos, Repo};
 use crate::runner::CommandRunner;
 use crate::time;
+use crate::workflows;
 
 /// Workflow variables (Alfred's user configuration).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -143,6 +144,19 @@ impl<'a> App<'a> {
             Key::Prs { repo, state } => self
                 .cache
                 .write(key, &prs::fetch_repo_prs(&gh, repo, *state)?)?,
+            Key::Workflows { repo } => {
+                let branch = self.default_branch(repo);
+                let list = workflows::fetch_workflows(&gh, repo, branch.as_deref())?;
+
+                self.cache.write(key, &list)?
+            }
+            Key::BranchRuns { repo, branch } => self
+                .cache
+                .write(key, &workflows::fetch_branch_runs(&gh, repo, branch)?)?,
+            Key::Runs { repo, workflow_id } => self.cache.write(
+                key,
+                &workflows::fetch_workflow_runs(&gh, repo, *workflow_id)?,
+            )?,
         }
 
         lock.release();
@@ -343,6 +357,132 @@ impl<'a> App<'a> {
             })
             .flatten()
             .collect()
+    }
+
+    /// The default branch of a cached repository.
+    fn default_branch(&self, repo: &str) -> Option<String> {
+        self.cached_repos()
+            .into_iter()
+            .find(|cached| cached.name_with_owner.eq_ignore_ascii_case(repo))
+            .and_then(|cached| cached.default_branch)
+    }
+
+    /// `gha`: workflows of one repository with their last run on the default
+    /// branch, or the runs of one workflow (`runs:<id>`).
+    pub fn workflows(&self, input: &str) -> Listing {
+        let now = self.now();
+
+        let (repo, rest) = match self.resolve(input) {
+            Ok(resolved) => resolved,
+            Err(listing) => return listing,
+        };
+
+        let filter = query::parse_workflow_filter(&rest);
+
+        if let Some(workflow_id) = filter.runs_of {
+            return self.runs(&repo, workflow_id, &filter.text);
+        }
+
+        let error =
+            |error: GhError| Listing::of(vec![alfred::gh_error_item(Some(&repo), &error, now)]);
+
+        let branch = self.default_branch(&repo);
+        let (list, list_refreshing) = match self.load(
+            &Key::Workflows { repo: repo.clone() },
+            |gh| workflows::fetch_workflows(gh, &repo, branch.as_deref()),
+            |_| true,
+        ) {
+            Ok(loaded) => loaded,
+            Err(err) => return error(err),
+        };
+
+        let (runs, runs_refreshing) = match self.load(
+            &Key::BranchRuns {
+                repo: repo.clone(),
+                branch: list.default_branch.clone(),
+            },
+            |gh| workflows::fetch_branch_runs(gh, &repo, &list.default_branch),
+            |_| true,
+        ) {
+            Ok(loaded) => loaded,
+            Err(err) => return error(err),
+        };
+
+        let text = filter.text.to_lowercase();
+        let items: Vec<Item> = list
+            .workflows
+            .iter()
+            .filter(|workflow| {
+                workflow.name.to_lowercase().contains(&text)
+                    || workflow.path.to_lowercase().contains(&text)
+            })
+            .map(|workflow| {
+                alfred::workflow_item(
+                    &repo,
+                    workflow,
+                    workflows::last_run(&runs, workflow.id),
+                    now,
+                )
+            })
+            .collect();
+
+        if items.is_empty() {
+            return Listing {
+                items: vec![alfred::error_item(
+                    &format!("No matching workflow in {repo}"),
+                    "Workflows live in .github/workflows",
+                )],
+                rerun: list_refreshing || runs_refreshing,
+            };
+        }
+
+        Listing {
+            items,
+            rerun: list_refreshing || runs_refreshing,
+        }
+    }
+
+    /// `gha <repo> runs:<id>`: the latest runs of one workflow.
+    fn runs(&self, repo: &str, workflow_id: u64, text: &str) -> Listing {
+        let now = self.now();
+        let key = Key::Runs {
+            repo: repo.to_owned(),
+            workflow_id,
+        };
+
+        let (runs, refreshing) = match self.load(
+            &key,
+            |gh| workflows::fetch_workflow_runs(gh, repo, workflow_id),
+            |_| true,
+        ) {
+            Ok(loaded) => loaded,
+            Err(error) => return Listing::of(vec![alfred::gh_error_item(Some(repo), &error, now)]),
+        };
+
+        let text = text.to_lowercase();
+        let items: Vec<Item> = runs
+            .iter()
+            .filter(|run| {
+                run.title.to_lowercase().contains(&text)
+                    || run.branch.to_lowercase().contains(&text)
+            })
+            .map(|run| alfred::run_item(run, now))
+            .collect();
+
+        if items.is_empty() {
+            return Listing {
+                items: vec![alfred::error_item(
+                    &format!("No matching run of workflow {workflow_id}"),
+                    "Runs of the last 10 executions are listed",
+                )],
+                rerun: refreshing,
+            };
+        }
+
+        Listing {
+            items,
+            rerun: refreshing,
+        }
     }
 
     /// `ghp`: pull requests of one repository.

@@ -40,6 +40,17 @@ fn ghp_state_filter_defaults_to_open() {
     );
 }
 
+#[test]
+fn gha_runs_filter_selects_a_workflow() {
+    let parsed = query::parse_workflow_filter("runs:1001 main");
+    assert_eq!(parsed.runs_of, Some(1001));
+    assert_eq!(parsed.text, "main");
+
+    let plain = query::parse_workflow_filter("ci runs:abc");
+    assert_eq!(plain.runs_of, None);
+    assert_eq!(plain.text, "ci runs:abc");
+}
+
 fn owners() -> Vec<String> {
     vec!["acme-org".to_owned(), "octo-user".to_owned()]
 }

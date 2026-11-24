@@ -9,6 +9,7 @@ object in the Alfred workflow graph:
 | --------------------------- | ---------------------------- | ------- | -------------- |
 | `alfred-gh repos [query]`   | Script Filter                | `gho`   | Repositories of `GH_OWNERS`, ranked. |
 | `alfred-gh prs [query]`     | Script Filter                | `ghp`   | Pull requests of one repository (resolved from `owner/name` or a bare name). |
+| `alfred-gh workflows [query]` | Script Filter              | `gha`   | Actions workflows of one repository with their last run, or one workflow's runs (`runs:<id>`). |
 | `alfred-gh run <arg>`       | Run Script (`action.script`) | —       | Decode the selected item's `arg` and perform it. |
 | `alfred-gh refresh <key>`   | — (spawned detached)         | —       | Rewrite one stale cache entry. |
 
@@ -100,6 +101,14 @@ sequenceDiagram
   (title, author, head branch, number). Checks come from the head commit's
   `statusCheckRollup`. The Jira key (`[A-Z][A-Z0-9]+-\d+`, `jira::pr_key`) is
   searched in the title, then the head branch.
+- **Actions** (REST, `workflows.rs`): `repos/{repo}/actions/workflows`, then
+  the last 100 runs on the default branch in **one** call
+  (`actions/runs?branch=<default>&per_page=100`, branch percent-encoded),
+  grouped by `workflow_id` — not one call per workflow. A workflow with no
+  run among them shows “no recent run”. The default branch comes from the
+  repository cache, or `GET repos/{repo}` when the repository is not cached.
+  `runs:<id>` reads `actions/workflows/{id}/runs?per_page=10`. The runs page
+  is `https://github.com/{repo}/actions/workflows/<file>`.
 - **SSO heuristic.** An organization returning no repository while another
   owner returns some is shown as "token not authorized for SSO", and is not
   cached.
@@ -113,6 +122,9 @@ Entries are JSON files under `$alfred_workflow_cache`, one per `cache::Key`:
 | `viewer`       | `viewer.json`        | 1 h  |
 | `repos <owner>`| `repos-<owner>.json` | 1 h  |
 | `prs <owner/name> <state>` | `prs-<owner>_<name>-<state>.json` | 60 s |
+| `workflows <owner/name>` | `workflows-<owner>_<name>.json` (with the default branch) | 10 min |
+| `branch-runs <owner/name> <branch>` | `branch-runs-<owner>_<name>-<branch>.json` | 30 s |
+| `runs <owner/name> <workflow id>` | `runs-<owner>_<name>-<id>.json` | 30 s |
 
 Each file stores the value and its `fetched_at` Unix time; freshness is
 computed against an injected clock, so the logic is unit-tested without
