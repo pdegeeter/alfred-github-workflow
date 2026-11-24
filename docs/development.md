@@ -38,17 +38,21 @@ cargo fmt --all                           # format
 ./scripts/build.sh    # build release binary + package the .alfredworkflow
 ./scripts/deploy.sh   # build + update the installed workflow in place (imports it the first time)
 ./scripts/deploy.sh --import  # build + open the .alfredworkflow to import it
-./scripts/icon.sh     # regenerate workflow/icon.png from scripts/icon.svg
+./scripts/icon.sh     # regenerate workflow/icon.png and workflow/<uid>.png from scripts/icon.svg
 ```
 
-The workflow icon (`workflow/icon.png`) is a committed asset rendered from
-`scripts/icon.svg`. It is not regenerated at build time, so CI needs no image
-tooling.
+The icons are committed assets rendered from `scripts/icon.svg`, the GitHub
+mark from primer/octicons (`mark-github-24.svg`, MIT) on a white disc so it
+reads on light and dark themes: `workflow/icon.png` for the workflow, and a
+copy named `workflow/<uid>.png` for every script filter, which Alfred shows
+for that keyword and its items. They are not regenerated at build time, so CI
+needs no image tooling. After adding a keyword, run `scripts/icon.sh`:
+`tests/plist_test.rs` fails while a script filter has no icon.
 
 `scripts/deploy.sh` finds the installed workflow in Alfred's preferences
 (`current` in `~/Library/Application Support/Alfred/prefs.json`, or
 `$ALFRED_PREFERENCES`) by its bundle id and copies the new binary,
-`info.plist` and icon over it; Alfred reloads the folder, and the user
+`info.plist` and every icon over it; Alfred reloads the folder, and the user
 configuration (`prefs.plist`) is kept. When the workflow is not installed yet,
 it opens the `.alfredworkflow` for import instead. It does not symlink
 (`powerpack link`): Alfred 6 turns the link into a stale copy, and re-importing
@@ -116,7 +120,7 @@ fictitious owners `acme-org` (organization) and `octo-user` (user).
 | `tests/time_test.rs`    | ISO 8601 parsing, relative ages, durations. |
 | `tests/action_test.rs`  | `arg` round-trip of every action, invalid args, execution (arguments passed to `open`, `osascript` and `gh`, never interpolated; clone then open; clearing the cache). |
 | `tests/alfred_test.rs`  | JSON shape of every item and modifier, decodability of every modifier `arg`, error items, `rerun` only when asked. |
-| `tests/plist_test.rs`   | `workflow/info.plist`: every keyword and the subcommand it runs, every modifier connected to the action, the user configuration variables and their generic defaults, the workflow readme (uses macOS `plutil`). |
+| `tests/plist_test.rs`   | `workflow/info.plist`: every keyword and the subcommand it runs, every modifier connected to the action, the user configuration variables and their generic defaults, an icon per script filter, the workflow readme (uses macOS `plutil`). |
 
 ## Project layout
 
@@ -126,12 +130,13 @@ fictitious owners `acme-org` (organization) and `octo-user` (user).
 ├── tests/                  Integration tests + shared FakeRunner
 ├── workflow/
 │   ├── info.plist          Alfred workflow definition (the binary is added at build time)
-│   └── icon.png            Workflow icon, rendered from scripts/icon.svg
+│   ├── icon.png            Workflow icon, rendered from scripts/icon.svg
+│   └── <uid>.png           The same icon for each script filter
 ├── scripts/
 │   ├── build.sh            Build + package the .alfredworkflow
 │   ├── deploy.sh           Build + install into Alfred
-│   ├── icon.sh             Regenerate workflow/icon.png
-│   └── icon.svg            Icon source
+│   ├── icon.sh             Regenerate the icons
+│   └── icon.svg            Icon source (GitHub mark)
 ├── docs/                   This documentation
 ├── .github/workflows/      CI and release-please pipelines
 ├── release-please-config.json

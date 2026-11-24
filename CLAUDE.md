@@ -128,9 +128,14 @@ process without waiting (stale-cache refreshes).
   before committing (the next deploy overwrites it), and validate with
   `plutil -lint workflow/info.plist`. The binary in `workflow/` is a build
   artifact (gitignored); `info.plist` and `icon.png` are tracked.
-- **Workflow icon**: `workflow/icon.png` is rendered from `scripts/icon.svg` by
-  `scripts/icon.sh` (`rsvg-convert`). It is committed and not regenerated at
-  build time.
+- **Icons**: `scripts/icon.svg` is the GitHub mark (primer/octicons
+  `mark-github-24.svg`, MIT) on a white disc. `scripts/icon.sh`
+  (`rsvg-convert`) renders it to `workflow/icon.png` and copies it to
+  `workflow/<uid>.png` for every script filter, which is how Alfred shows an
+  icon per keyword (items carry none of their own). They are committed, not
+  regenerated at build time; `deploy.sh` copies every `workflow/*.png`.
+  Run `scripts/icon.sh` after adding a keyword: `tests/plist_test.rs` fails
+  until its icon exists.
 - **Protected `main`**: work via PRs only (enforced for admins). CI `test` and
   `package` must be green, and **all commits must be signed** (SSH signing) to
   merge. See `docs/development.md`.

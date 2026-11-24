@@ -150,6 +150,24 @@ fn user_configuration_declares_every_variable_without_personal_defaults() {
 }
 
 #[test]
+fn every_script_filter_has_the_workflow_icon() {
+    let plist = plist();
+    let icon = std::fs::read("workflow/icon.png").expect("workflow/icon.png");
+
+    for filter in script_filters(&plist) {
+        let uid = filter["uid"].as_str().unwrap();
+        let path = format!("workflow/{uid}.png");
+        let own = std::fs::read(&path)
+            .unwrap_or_else(|_| panic!("{path} is missing: run scripts/icon.sh"));
+
+        assert_eq!(
+            own, icon,
+            "{path} differs from workflow/icon.png: run scripts/icon.sh"
+        );
+    }
+}
+
+#[test]
 fn workflow_readme_lists_every_keyword_and_variable() {
     let plist = plist();
     let readme = plist["readme"].as_str().unwrap();

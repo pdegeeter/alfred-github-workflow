@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 #
-# Regenerate the Alfred workflow icon (workflow/icon.png) from scripts/icon.svg.
-# Alfred uses a PNG, so the SVG is rasterized at 512x512.
+# Regenerate the Alfred icons from scripts/icon.svg (the GitHub mark):
 #
-# Requires: rsvg-convert (brew install librsvg).
+#   * workflow/icon.png       — the workflow's icon;
+#   * workflow/<uid>.png      — one per script filter of workflow/info.plist,
+#                               which Alfred shows for that keyword (and its
+#                               items, which carry no icon of their own).
+#
+# Requires: rsvg-convert (brew install librsvg), plutil (ships with macOS).
 #
 # Usage: scripts/icon.sh
 
@@ -18,5 +22,17 @@ if ! command -v rsvg-convert >/dev/null 2>&1; then
 fi
 
 rsvg-convert -w 512 -h 512 scripts/icon.svg -o workflow/icon.png
+echo "==> Wrote workflow/icon.png"
 
-echo "==> Wrote workflow/icon.png ($(sips -g pixelWidth -g pixelHeight workflow/icon.png | awk '/pixel/{print $2}' | paste -sd x -))"
+# Script filter uids, read from the plist so a new keyword gets its icon.
+uids="$(plutil -convert json -o - workflow/info.plist | python3 -c '
+import json, sys
+for o in json.load(sys.stdin)["objects"]:
+    if o["type"] == "alfred.workflow.input.scriptfilter":
+        print(o["uid"])
+')"
+
+for uid in $uids; do
+  cp workflow/icon.png "workflow/$uid.png"
+  echo "==> Wrote workflow/$uid.png"
+done

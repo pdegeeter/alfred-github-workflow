@@ -7,8 +7,9 @@
 #   scripts/deploy.sh --import # always open the .alfredworkflow for import.
 #
 # Updating in place: the installed workflow is found in Alfred's preferences
-# by its bundle id, and the freshly built binary, info.plist and icon are copied
-# over it (anything else in that folder, such as Alfred's prefs.plist, is kept).
+# by its bundle id, and the freshly built binary, info.plist and icons (the
+# workflow's and one per script filter) are copied over it (anything else in
+# that folder, such as Alfred's prefs.plist, is kept).
 # Alfred reloads the folder from disk. This replaces symlinking (`powerpack
 # link`), which Alfred 6 turns into a stale copy, and re-importing, which Alfred
 # 6 fails to apply over an existing install.
@@ -24,7 +25,10 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 PACKAGE="target/workflow/alfred-gh.alfredworkflow"
-FILES=(alfred-gh info.plist icon.png)
+FILES=(alfred-gh info.plist)
+for icon in workflow/*.png; do
+  FILES+=("$(basename "$icon")")
+done
 
 MODE="update"
 if [[ "${1:-}" == "--import" ]]; then

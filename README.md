@@ -137,6 +137,13 @@ cargo install powerpack-cli   # one-time
 - [Development](docs/development.md) — build, test, lint, deploy locally.
 - [Release process](docs/release.md) — release-please and the CI/CD pipeline.
 
+## Credits
+
+The icon is the GitHub mark from [Octicons](https://github.com/primer/octicons)
+(MIT), rendered to `workflow/icon.png` and used for every keyword. GitHub and
+the GitHub logo are trademarks of GitHub, Inc.; this workflow is not
+affiliated with GitHub.
+
 ## License
 
 MIT
