@@ -1,0 +1,17 @@
+# Rust build output
+/target
+
+# Binary copied into the workflow bundle by `powerpack build`
+/workflow/alfred-gh
+
+# Packaged workflow artifacts
+*.alfredworkflow
+
+# Per-user workflow configuration written by Alfred
+/workflow/prefs.plist
+
+# Local, per-user agent notes
+CLAUDE.local.md
+
+# Agent worktrees
+/.claude/worktrees/
