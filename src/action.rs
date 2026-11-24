@@ -3,13 +3,17 @@
 //! Each item (and each of its modifiers) carries an `arg` of the form
 //! `"<verb> <payload>"`. [`Action::parse`] turns it back into an [`Action`] and
 //! [`execute`] performs it. Payload fields are ordered so that only the last
-//! one may contain spaces; URLs never do.
+//! one may contain spaces (application names); URLs and `owner/repo` never do.
+
+use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail, Result};
 
+use crate::cache::Cache;
+use crate::local;
 use crate::runner::CommandRunner;
 
-/// macOS `open`, used for URLs.
+/// macOS `open`, used for URLs and to open clones in an editor.
 pub const OPEN: &str = "/usr/bin/open";
 
 /// `osascript`, used for the clipboard.
@@ -22,6 +26,21 @@ pub enum Action {
     Open { url: String },
     /// Copy a URL.
     Copy { url: String },
+    /// Open the local clone of `repo` in `editor`, cloning it first if needed.
+    CloneOpen { repo: String, editor: String },
+    /// Clear every cache entry.
+    Refresh,
+}
+
+/// What [`execute`] needs from the outside world.
+pub struct Context<'a> {
+    pub runner: &'a dyn CommandRunner,
+    /// The resolved `gh` binary, if installed.
+    pub gh: Option<&'a str>,
+    pub home: PathBuf,
+    pub cache: &'a Cache,
+    /// Whether a path exists (injected so clone checks are testable).
+    pub exists: &'a dyn Fn(&Path) -> bool,
 }
 
 impl Action {
@@ -34,6 +53,8 @@ impl Action {
         match self {
             Action::Open { url } => Action::join("open", &[url]),
             Action::Copy { url } => Action::join("copy", &[url]),
+            Action::CloneOpen { repo, editor } => Action::join("clone-open", &[repo, editor]),
+            Action::Refresh => Action::join("refresh", &["all"]),
         }
     }
 
@@ -50,6 +71,17 @@ impl Action {
             "copy" => Action::Copy {
                 url: Action::required(payload, "url")?,
             },
+            "clone-open" => {
+                let (repo, editor) = payload
+                    .split_once(' ')
+                    .ok_or_else(|| anyhow!("missing editor in {arg:?}"))?;
+
+                Action::CloneOpen {
+                    repo: Action::required(repo, "repository")?,
+                    editor: Action::required(editor.trim(), "editor")?,
+                }
+            }
+            "refresh" if payload == "all" => Action::Refresh,
             other => bail!("unknown action: {other:?}"),
         };
 
@@ -86,17 +118,47 @@ pub fn copy_to_clipboard(runner: &dyn CommandRunner, text: &str) -> Result<()> {
 }
 
 /// Perform `action`. Returns the text of the notification to show, if any.
-pub fn execute(runner: &dyn CommandRunner, action: &Action) -> Result<Option<String>> {
+pub fn execute(ctx: &Context, action: &Action) -> Result<Option<String>> {
     match action {
         Action::Open { url } => {
-            runner.run(OPEN, &[url])?;
+            ctx.runner.run(OPEN, &[url])?;
 
             Ok(None)
         }
         Action::Copy { url } => {
-            copy_to_clipboard(runner, url)?;
+            copy_to_clipboard(ctx.runner, url)?;
 
             Ok(Some(format!("Copied {url}")))
         }
+        Action::CloneOpen { repo, editor } => clone_open(ctx, repo, editor),
+        Action::Refresh => {
+            let removed = ctx.cache.clear()?;
+            let plural = if removed == 1 { "y" } else { "ies" };
+
+            Ok(Some(format!("Cache cleared ({removed} entr{plural})")))
+        }
     }
+}
+
+fn clone_open(ctx: &Context, repo: &str, editor: &str) -> Result<Option<String>> {
+    if !local::is_valid_name_with_owner(repo) {
+        bail!("invalid repository: {repo:?}");
+    }
+
+    let path = local::clone_path(&ctx.home, repo);
+    let path_arg = path.to_string_lossy().into_owned();
+    let mut message = None;
+
+    if !(ctx.exists)(&path) {
+        let gh = ctx
+            .gh
+            .ok_or_else(|| anyhow!("GitHub CLI not found: brew install gh"))?;
+
+        ctx.runner.run(gh, &["repo", "clone", repo, &path_arg])?;
+        message = Some(format!("Cloned {repo} into {path_arg}"));
+    }
+
+    ctx.runner.run(OPEN, &["-a", editor, &path_arg])?;
+
+    Ok(message)
 }

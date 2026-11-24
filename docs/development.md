@@ -64,11 +64,20 @@ The binary speaks Alfred's JSON on stdout, so you can exercise it directly:
 ```sh
 cargo build
 B=./target/debug/alfred-gh
+export alfred_workflow_cache=$(mktemp -d) GH_OWNERS=my-org,my-user
+
+$B repos "" | python3 -m json.tool        # gho (first run fetches, next ones hit the cache)
+$B repos "m:api" | python3 -m json.tool   # gho, one owner
 
 # Actions take the `arg` of an item (see docs/architecture.md):
 $B run "copy https://github.com"
-$B run "open https://github.com"
+$B run "clone-open my-org/api Zed"
+$B run "refresh all"
 ```
+
+To see the stale path, set `fetched_at` to `1` in a cache file: the next run
+prints `"rerun": 0.5`, a `.lock` appears while the detached refresh runs, then
+the entry is rewritten and the lock removed.
 
 ## Testing strategy
 
@@ -76,13 +85,23 @@ All logic is pure and unit-tested; every process spawn — `gh`, `osascript`,
 `open` — goes through the `CommandRunner` trait and is replaced in tests by
 `FakeRunner` (`tests/common/mod.rs`), which returns queued canned outputs per
 program (successes, or failures with stdout and stderr), records every call and
-every detached spawn. The whole suite runs offline.
+every detached spawn. The whole suite runs offline. Canned `gh` responses live
+in `tests/fixtures/`: real responses with every name rewritten to the
+fictitious owners `acme-org` (organization) and `octo-user` (user).
 
 | Test file               | Covers |
 | ----------------------- | ------ |
 | `tests/runner_test.rs`  | `SystemRunner` against harmless system programs: stdout, `CommandError` keeping stdout/stderr/exit code, detached spawns returning at once. |
-| `tests/action_test.rs`  | `arg` round-trip of every action, invalid args, execution (arguments passed to `open` and `osascript`, never interpolated). |
-| `tests/alfred_test.rs`  | JSON shape of items, `rerun` only when asked. |
+| `tests/gh_test.rs`      | `gh` path resolution, exact GraphQL/REST argv (variables as raw `-f` fields), classification of every error (missing, not authenticated, SAML, rate limit with reset lookup, other). |
+| `tests/owners_test.rs`  | `GH_OWNERS` parsing, owner kinds, search qualifiers, owner prefixes and collisions. |
+| `tests/cache_test.rs`   | Fresh / stale / missing / corrupted entries with an injected clock, atomic writes, locks (exclusive, expiring), clearing, keys and TTLs. |
+| `tests/repos_test.rs`   | Repository page parsing, pagination merge (cursor in the argv), the `gho` listing: per-owner cache entries, fresh/stale serving, background refresh spawn and lock, failed refresh back-off, one owner failing, SSO (error and empty organization), missing `gh`, not authenticated, rate limit, default owner. |
+| `tests/ranking_test.rs` | Ranking tiers, push-date ties, archived last, empty query. |
+| `tests/query_test.rs`   | Query parsing of every keyword. |
+| `tests/local_test.rs`   | Clone paths and `owner/repo` validation. |
+| `tests/time_test.rs`    | ISO 8601 parsing, relative ages, durations. |
+| `tests/action_test.rs`  | `arg` round-trip of every action, invalid args, execution (arguments passed to `open`, `osascript` and `gh`, never interpolated; clone then open; clearing the cache). |
+| `tests/alfred_test.rs`  | JSON shape of every item and modifier, decodability of every modifier `arg`, error items, `rerun` only when asked. |
 | `tests/plist_test.rs`   | `workflow/info.plist`: every keyword and the subcommand it runs, every modifier connected to the action, the user configuration variables and their generic defaults, the workflow readme (uses macOS `plutil`). |
 
 ## Project layout

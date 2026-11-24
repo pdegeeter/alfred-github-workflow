@@ -8,6 +8,59 @@
 	<string>Productivity</string>
 	<key>connections</key>
 	<dict>
+		<key>A1000000-0000-0000-0000-0000000000A1</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>E0000000-0000-0000-0000-0000000000E0</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>E0000000-0000-0000-0000-0000000000E0</string>
+				<key>modifiers</key>
+				<integer>1048576</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>E0000000-0000-0000-0000-0000000000E0</string>
+				<key>modifiers</key>
+				<integer>524288</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>E0000000-0000-0000-0000-0000000000E0</string>
+				<key>modifiers</key>
+				<integer>262144</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>E0000000-0000-0000-0000-0000000000E0</string>
+				<key>modifiers</key>
+				<integer>1179648</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
 		<key>E0000000-0000-0000-0000-0000000000E0</key>
 		<array>
 			<dict>
@@ -32,6 +85,55 @@
 	<string>GitHub</string>
 	<key>objects</key>
 	<array>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key>
+				<false/>
+				<key>alfredfiltersresultsmatchmode</key>
+				<integer>0</integer>
+				<key>argumenttreatemptyqueryasnil</key>
+				<false/>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>1</integer>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>keyword</key>
+				<string>gho</string>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<true/>
+				<key>queuedelaymode</key>
+				<integer>0</integer>
+				<key>queuemode</key>
+				<integer>2</integer>
+				<key>runningsubtext</key>
+				<string>Loading repositories…</string>
+				<key>script</key>
+				<string>./alfred-gh repos "$1"</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>subtext</key>
+				<string>Repositories of your owners · a:&lt;q&gt; to filter by owner</string>
+				<key>title</key>
+				<string>Search GitHub repositories</string>
+				<key>type</key>
+				<integer>0</integer>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>A1000000-0000-0000-0000-0000000000A1</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
 		<dict>
 			<key>config</key>
 			<dict>
@@ -80,6 +182,8 @@
 	<key>readme</key>
 	<string>Navigate GitHub from Alfred.
 
+- gho [o:]query — repositories of GH_OWNERS (↩ open, ⌘ local clone in EDITOR_APP, ⌥ copy URL)
+
 Configure the workflow (Configure Workflow… in Alfred):
 - GH_OWNERS — comma-separated organizations and users whose repositories are listed (default: your gh login)
 - EDITOR_APP — application that opens local clones (default: Visual Studio Code)
@@ -88,6 +192,13 @@ Configure the workflow (Configure Workflow… in Alfred):
 Requires the GitHub CLI (brew install gh) authenticated with gh auth login.</string>
 	<key>uidata</key>
 	<dict>
+		<key>A1000000-0000-0000-0000-0000000000A1</key>
+		<dict>
+			<key>xpos</key>
+			<integer>60</integer>
+			<key>ypos</key>
+			<integer>30</integer>
+		</dict>
 		<key>E0000000-0000-0000-0000-0000000000E0</key>
 		<dict>
 			<key>xpos</key>

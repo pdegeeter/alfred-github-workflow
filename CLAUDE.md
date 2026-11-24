@@ -17,10 +17,13 @@ doc comments before committing. `cargo test --all`,
 An Alfred (macOS) workflow written in Rust to navigate GitHub. A single binary,
 `alfred-gh`, backs every object of the Alfred graph:
 
+- **Script Filters**, one per keyword: `repos` (`gho`). They print Alfred JSON.
 - One **Run Script**, `alfred-gh run <arg>`, connected to every script filter
   for every modifier used. `arg` is an encoded `action::Action`
   (`"<verb> <payload>"`, see `docs/architecture.md`). Whatever it prints feeds a
   Post Notification.
+- `alfred-gh refresh <key>` is not in the graph: script filters spawn it
+  detached to rewrite a stale cache entry.
 
 The binary ships inside `workflow/` (with `info.plist`) and is packaged into a
 `.alfredworkflow` file for distribution.
@@ -39,7 +42,8 @@ cargo fmt --all                           # format (CI checks with --check)
 ./scripts/icon.sh             # regenerate workflow/icon.png from scripts/icon.svg
 
 # Exercise the binary directly (it speaks Alfred JSON on stdout):
-cargo build && ./target/debug/alfred-gh run "copy https://github.com"
+cargo build && alfred_workflow_cache=/tmp/agh GH_OWNERS=my-org,my-user \
+  ./target/debug/alfred-gh repos api | python3 -m json.tool
 ```
 
 `powerpack-cli` is required for build/deploy/packaging: `cargo install powerpack-cli`.
@@ -60,9 +64,29 @@ stderr (gh prints GraphQL errors as JSON on stdout and exits 1), reachable with
 process without waiting (stale-cache refreshes).
 
 - `runner.rs` — the process boundary (`CommandRunner`, `SystemRunner`, `CommandError`).
+- `gh.rs` — `gh` resolved by absolute path (`/opt/homebrew/bin/gh`, then
+  `/usr/local/bin/gh`: Alfred has no shell `PATH`); `gh api graphql` with fixed
+  query constants and variables as `-f name=value` (never `-F`, which reads
+  `@file` values); `gh api <path>` for REST; `GhError` classification
+  (missing, not authenticated, rate limited + reset from `gh api rate_limit`,
+  SSO from `FORBIDDEN` / SAML errors, other).
+- `owners.rs` — `GH_OWNERS` parsing, `OwnerKind` from `__typename`, search
+  qualifiers (`org:x user:y`), owner prefixes (`a:` / `acme-org:`).
+- `cache.rs` — stale-while-revalidate JSON entries under
+  `$alfred_workflow_cache` (`Key` ⇒ file stem, TTL, `refresh` argument),
+  freshness from the stored `fetched_at` and an injected clock, refresh locks.
+- `app.rs` — orchestration: `Settings` (workflow variables), `App::load`
+  (fresh ⇒ serve; stale ⇒ serve + spawn `refresh` + `rerun`; missing ⇒ fetch),
+  `App::refresh`, one method per script filter.
+- `repos.rs` — `repositoryOwner(login:)` pages (`ownerAffiliations: [OWNER]`),
+  pagination, `Repo` / `OwnerRepos`.
+- `ranking.rs` — repository ranking. `query.rs` — keyword query parsing.
+- `local.rs` — clone path `~/Workspace/github.com/<owner>/<repo>` and
+  `owner/repo` validation. `time.rs` — ISO 8601 parsing, relative ages.
 - `action.rs` — the `arg` protocol (`Action::to_arg` / `Action::parse`) and
-  `execute`.
-- `alfred.rs` — item builders and the script filter output (`rerun`).
+  `execute` (with a `Context`: runner, gh path, home, cache, `exists`).
+- `alfred.rs` — item builders, `gh` error items and the script filter output
+  (`rerun`).
 
 ## Conventions that matter here
 
@@ -79,6 +103,11 @@ process without waiting (stale-cache refreshes).
 - **No `uid` on Alfred items** — Alfred would re-sort them. Filtering and
   ordering are done in Rust (`alfredfiltersresults = false`).
 - **Script filters never hard-fail**: errors become an invalid Alfred item.
+  One owner failing never hides another owner's results.
+- **Cache**: each owner (and later each repository's PRs, workflows, runs)
+  has its own entry and TTL (`Key::ttl`). A failed background refresh keeps
+  its lock until it expires (60 s), which is the back-off. An organization
+  returning no repository is never cached (likely SSO; shows the SSO item).
 - **Keywords are fixed.** `tests/plist_test.rs` pins the keyword → subcommand
   map, the modifier connections and the user configuration variables: update it
   with any keyword, modifier or variable change.

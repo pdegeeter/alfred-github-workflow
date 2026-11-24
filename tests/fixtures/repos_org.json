@@ -1,0 +1,87 @@
+{
+  "data": {
+    "repositoryOwner": {
+      "__typename": "Organization",
+      "repositories": {
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": "Y3Vyc29yOm9yZw=="
+        },
+        "nodes": [
+          {
+            "nameWithOwner": "acme-org/api",
+            "description": "Public API service",
+            "url": "https://github.com/acme-org/api",
+            "homepageUrl": null,
+            "pushedAt": "2026-11-24T21:08:11Z",
+            "isArchived": false,
+            "isPrivate": true,
+            "isFork": false,
+            "primaryLanguage": null,
+            "repositoryTopics": {
+              "nodes": [
+                {
+                  "topic": {
+                    "name": "backend"
+                  }
+                },
+                {
+                  "topic": {
+                    "name": "typescript"
+                  }
+                }
+              ]
+            },
+            "defaultBranchRef": {
+              "name": "main"
+            }
+          },
+          {
+            "nameWithOwner": "acme-org/web-app",
+            "description": "Customer web application",
+            "url": "https://github.com/acme-org/web-app",
+            "homepageUrl": null,
+            "pushedAt": "2026-11-24T21:05:07Z",
+            "isArchived": false,
+            "isPrivate": true,
+            "isFork": false,
+            "primaryLanguage": {
+              "name": "Shell"
+            },
+            "repositoryTopics": {
+              "nodes": [
+                {
+                  "topic": {
+                    "name": "frontend"
+                  }
+                }
+              ]
+            },
+            "defaultBranchRef": {
+              "name": "master"
+            }
+          },
+          {
+            "nameWithOwner": "acme-org/legacy-tools",
+            "description": "Old internal tools",
+            "url": "https://github.com/acme-org/legacy-tools",
+            "homepageUrl": null,
+            "pushedAt": "2026-11-18T22:33:06Z",
+            "isArchived": true,
+            "isPrivate": true,
+            "isFork": false,
+            "primaryLanguage": {
+              "name": "Rust"
+            },
+            "repositoryTopics": {
+              "nodes": []
+            },
+            "defaultBranchRef": {
+              "name": "main"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

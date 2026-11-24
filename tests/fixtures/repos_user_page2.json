@@ -1,0 +1,72 @@
+{
+  "data": {
+    "repositoryOwner": {
+      "__typename": "User",
+      "repositories": {
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": "Y3Vyc29yOnBhZ2Uy"
+        },
+        "nodes": [
+          {
+            "nameWithOwner": "octo-user/zed-projects",
+            "description": "Fork of a project launcher",
+            "url": "https://github.com/octo-user/zed-projects",
+            "homepageUrl": "",
+            "pushedAt": "2026-10-17T11:41:21Z",
+            "isArchived": false,
+            "isPrivate": false,
+            "isFork": true,
+            "primaryLanguage": {
+              "name": "Rust"
+            },
+            "repositoryTopics": {
+              "nodes": []
+            },
+            "defaultBranchRef": {
+              "name": "main"
+            }
+          },
+          {
+            "nameWithOwner": "octo-user/sms-logs",
+            "description": null,
+            "url": "https://github.com/octo-user/sms-logs",
+            "homepageUrl": null,
+            "pushedAt": "2023-12-04T09:09:55Z",
+            "isArchived": false,
+            "isPrivate": true,
+            "isFork": false,
+            "primaryLanguage": null,
+            "repositoryTopics": {
+              "nodes": []
+            },
+            "defaultBranchRef": null
+          },
+          {
+            "nameWithOwner": "octo-user/octo-user",
+            "description": "Profile README",
+            "url": "https://github.com/octo-user/octo-user",
+            "homepageUrl": "https://github.com/octo-user",
+            "pushedAt": "2021-07-21T09:48:06Z",
+            "isArchived": false,
+            "isPrivate": false,
+            "isFork": false,
+            "primaryLanguage": null,
+            "repositoryTopics": {
+              "nodes": [
+                {
+                  "topic": {
+                    "name": "config"
+                  }
+                }
+              ]
+            },
+            "defaultBranchRef": {
+              "name": "main"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

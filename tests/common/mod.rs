@@ -7,8 +7,60 @@
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 
+use std::path::Path;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+use alfred_gh::app::{App, Settings};
+use alfred_gh::cache::Cache;
 use alfred_gh::runner::{CommandError, CommandRunner};
 use anyhow::{bail, Result};
+use serde_json::Value;
+
+/// The `gh` path the tests pretend is installed.
+pub const GH: &str = "/opt/homebrew/bin/gh";
+
+/// The binary path the tests pretend `alfred-gh` runs from.
+pub const EXE: &str = "/Alfred/workflows/gh/alfred-gh";
+
+/// The clock of every app test: 2026-11-25T00:00:00Z.
+pub const NOW: u64 = 1_795_564_800;
+
+pub fn at(seconds: u64) -> SystemTime {
+    UNIX_EPOCH + Duration::from_secs(seconds)
+}
+
+/// An app on `runner`, caching in `dir`, at `now`, for `owners`
+/// (`GH_OWNERS`).
+pub fn app<'a>(runner: &'a FakeRunner, dir: &Path, now: u64, owners: &str) -> App<'a> {
+    App {
+        runner,
+        gh_path: Some(GH),
+        cache: Cache::new(dir, at(now)),
+        exe: EXE.to_owned(),
+        home: "/Users/octo".into(),
+        settings: Settings::from_vars(|name| match name {
+            "GH_OWNERS" => Some(owners.to_owned()),
+            "JIRA_URL" => Some("https://jira.example.com/browse/".to_owned()),
+            _ => None,
+        }),
+    }
+}
+
+/// Items as the JSON Alfred receives.
+pub fn items_json(items: &[powerpack::Item]) -> Vec<Value> {
+    items
+        .iter()
+        .map(|item| serde_json::to_value(item).unwrap())
+        .collect()
+}
+
+/// The titles of `items`.
+pub fn titles(items: &[powerpack::Item]) -> Vec<String> {
+    items_json(items)
+        .iter()
+        .map(|item| item["title"].as_str().unwrap().to_owned())
+        .collect()
+}
 
 /// A single recorded invocation of [`FakeRunner`].
 #[derive(Debug, Clone, PartialEq, Eq)]

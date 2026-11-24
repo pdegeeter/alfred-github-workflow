@@ -6,7 +6,33 @@ requests and Actions, your review queue and your own pull requests.
 
 ## Usage
 
-Keywords are added one by one; none is available yet.
+### Repositories — `gho`
+
+Lists the repositories of every owner in `GH_OWNERS` (organizations and
+users). Exact name matches come first, then name prefixes, name substrings,
+topics and descriptions; ties go to the most recently pushed. Archived
+repositories come last and say so.
+
+- `gho a:api` — only the owner starting with `a` (use the full login,
+  `gho acme-org:api`, when two owners share a first letter)
+- <kbd>↩</kbd> open on GitHub
+- <kbd>⌘</kbd><kbd>↩</kbd> open the local clone
+  (`~/Workspace/github.com/<owner>/<repo>`) in `EDITOR_APP`, cloning it with
+  `gh repo clone` first if it is missing
+- <kbd>⌥</kbd><kbd>↩</kbd> copy the URL
+- the last item, **Refresh cache**, forgets everything cached
+
+If an organization's repositories are missing because `gh` is not authorized
+for its SAML SSO, an item says so and <kbd>↩</kbd> opens
+[the authorization page](https://github.com/settings/connections/applications).
+
+## How it works
+
+- Every call goes through the `gh` CLI (`gh api graphql`, `gh api`): it
+  handles authentication, token refresh and SSO.
+- Results are cached under Alfred's workflow cache folder. A fresh cache is
+  shown at once; a stale one too, while a background process refreshes it and
+  Alfred reloads the list. Repositories are cached for 1 hour per owner.
 
 ## Configuration
 
