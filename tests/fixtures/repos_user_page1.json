@@ -1,0 +1,81 @@
+{
+  "data": {
+    "repositoryOwner": {
+      "__typename": "User",
+      "repositories": {
+        "pageInfo": {
+          "hasNextPage": true,
+          "endCursor": "Y3Vyc29yOnBhZ2Ux"
+        },
+        "nodes": [
+          {
+            "nameWithOwner": "octo-user/alfred-tools",
+            "description": "Alfred workflow for dashboards",
+            "url": "https://github.com/octo-user/alfred-tools",
+            "homepageUrl": null,
+            "pushedAt": "2026-11-24T21:08:11Z",
+            "isArchived": false,
+            "isPrivate": false,
+            "isFork": false,
+            "primaryLanguage": null,
+            "repositoryTopics": {
+              "nodes": [
+                {
+                  "topic": {
+                    "name": "alfred"
+                  }
+                },
+                {
+                  "topic": {
+                    "name": "rust"
+                  }
+                }
+              ]
+            },
+            "defaultBranchRef": {
+              "name": "main"
+            }
+          },
+          {
+            "nameWithOwner": "octo-user/dotfiles",
+            "description": null,
+            "url": "https://github.com/octo-user/dotfiles",
+            "homepageUrl": null,
+            "pushedAt": "2026-11-24T21:05:07Z",
+            "isArchived": false,
+            "isPrivate": true,
+            "isFork": false,
+            "primaryLanguage": {
+              "name": "Shell"
+            },
+            "repositoryTopics": {
+              "nodes": []
+            },
+            "defaultBranchRef": {
+              "name": "master"
+            }
+          },
+          {
+            "nameWithOwner": "octo-user/password-helper",
+            "description": "Alfred workflow for secrets",
+            "url": "https://github.com/octo-user/password-helper",
+            "homepageUrl": null,
+            "pushedAt": "2026-11-18T22:33:06Z",
+            "isArchived": false,
+            "isPrivate": false,
+            "isFork": false,
+            "primaryLanguage": {
+              "name": "Rust"
+            },
+            "repositoryTopics": {
+              "nodes": []
+            },
+            "defaultBranchRef": {
+              "name": "main"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

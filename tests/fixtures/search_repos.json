@@ -1,0 +1,58 @@
+{
+  "data": {
+    "search": {
+      "nodes": [
+        {
+          "nameWithOwner": "public-org/alfred-kit",
+          "description": "Toolkit for Alfred workflows",
+          "url": "https://github.com/public-org/alfred-kit",
+          "homepageUrl": null,
+          "pushedAt": "2026-09-22T11:11:47Z",
+          "isArchived": false,
+          "isPrivate": false,
+          "isFork": false,
+          "primaryLanguage": {
+            "name": "Rust"
+          },
+          "repositoryTopics": {
+            "nodes": [
+              {
+                "topic": {
+                  "name": "alfred"
+                }
+              }
+            ]
+          },
+          "defaultBranchRef": {
+            "name": "main"
+          }
+        },
+        {
+          "nameWithOwner": "someone/alfred-rs",
+          "description": "Alfred helpers in Rust",
+          "url": "https://github.com/someone/alfred-rs",
+          "homepageUrl": null,
+          "pushedAt": "2026-01-18T01:48:46Z",
+          "isArchived": false,
+          "isPrivate": false,
+          "isFork": false,
+          "primaryLanguage": {
+            "name": "Rust"
+          },
+          "repositoryTopics": {
+            "nodes": [
+              {
+                "topic": {
+                  "name": "alfred"
+                }
+              }
+            ]
+          },
+          "defaultBranchRef": {
+            "name": "master"
+          }
+        }
+      ]
+    }
+  }
+}
