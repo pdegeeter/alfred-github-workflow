@@ -7,6 +7,7 @@ object in the Alfred workflow graph:
 
 | Subcommand                  | Alfred object                | Keyword | Responsibility |
 | --------------------------- | ---------------------------- | ------- | -------------- |
+| `alfred-gh search [query]`  | Script Filter                | `gh`    | Public repository search, live, never cached. |
 | `alfred-gh repos [query]`   | Script Filter                | `gho`   | Repositories of `GH_OWNERS`, ranked. |
 | `alfred-gh prs [query]`     | Script Filter                | `ghp`   | Pull requests of one repository (resolved from `owner/name` or a bare name). |
 | `alfred-gh workflows [query]` | Script Filter              | `gha`   | Actions workflows of one repository with their last run, or one workflow's runs (`runs:<id>`). |
@@ -103,6 +104,11 @@ sequenceDiagram
   (title, author, head branch, number). Checks come from the head commit's
   `statusCheckRollup`. The Jira key (`[A-Z][A-Z0-9]+-\d+`, `jira::pr_key`) is
   searched in the title, then the head branch.
+- **Public search** (`gh`): `search(type: REPOSITORY, first: 20)`
+  (`repos::SEARCH_REPOS_QUERY`, same fields as the owner listing) with the
+  query passed as is, so GitHub qualifiers work. It is live and uncached:
+  each keystroke is a new query and Alfred's queue (`queuemode = 2`) keeps
+  only the latest run. An empty query shows a hint without calling `gh`.
 - **Review queue and my pull requests** (`ghr`, `ghm`): one
   `search(type: ISSUE)` query (`prs::SEARCH_PRS_QUERY`) with
   `is:pr is:open archived:false review-requested:@me` (or `author:@me`)

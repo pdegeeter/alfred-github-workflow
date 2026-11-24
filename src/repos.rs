@@ -10,8 +10,26 @@ use serde_json::Value;
 use crate::gh::{Gh, GhError};
 use crate::owners::OwnerKind;
 
+/// The fields read for every repository.
+macro_rules! repo_fields {
+    () => {
+        "nameWithOwner description url homepageUrl pushedAt isArchived isPrivate isFork primaryLanguage { name } repositoryTopics(first: 10) { nodes { topic { name } } } defaultBranchRef { name }"
+    };
+}
+
 /// One page of an owner's repositories, most recently pushed first.
-pub const REPOS_QUERY: &str = "query($login: String!, $after: String) { repositoryOwner(login: $login) { __typename repositories(first: 100, after: $after, ownerAffiliations: [OWNER], orderBy: {field: PUSHED_AT, direction: DESC}) { pageInfo { hasNextPage endCursor } nodes { nameWithOwner description url homepageUrl pushedAt isArchived isPrivate isFork primaryLanguage { name } repositoryTopics(first: 10) { nodes { topic { name } } } defaultBranchRef { name } } } } }";
+pub const REPOS_QUERY: &str = concat!(
+    "query($login: String!, $after: String) { repositoryOwner(login: $login) { __typename repositories(first: 100, after: $after, ownerAffiliations: [OWNER], orderBy: {field: PUSHED_AT, direction: DESC}) { pageInfo { hasNextPage endCursor } nodes { ",
+    repo_fields!(),
+    " } } } }"
+);
+
+/// Public repository search (`gh` keyword), best match first.
+pub const SEARCH_REPOS_QUERY: &str = concat!(
+    "query($q: String!) { search(type: REPOSITORY, first: 20, query: $q) { nodes { ... on Repository { ",
+    repo_fields!(),
+    " } } } }"
+);
 
 /// Safety net against a cursor that never ends (100 pages = 10,000 repos).
 const MAX_PAGES: usize = 100;
@@ -117,6 +135,21 @@ pub fn parse_page(data: &Value) -> Option<Page> {
     };
 
     Some(Page { kind, repos, next })
+}
+
+/// Parse the `data` of [`SEARCH_REPOS_QUERY`].
+pub fn parse_search(data: &Value) -> Vec<Repo> {
+    data["search"]["nodes"]
+        .as_array()
+        .map(|nodes| nodes.iter().filter_map(Repo::from_node).collect())
+        .unwrap_or_default()
+}
+
+/// Search public GitHub repositories (live, never cached).
+pub fn search(gh: &Gh, query: &str) -> Result<Vec<Repo>, GhError> {
+    let data = gh.graphql(SEARCH_REPOS_QUERY, &[("q", query)])?;
+
+    Ok(parse_search(&data))
 }
 
 /// Fetch every repository of `login`, following the pagination cursor.

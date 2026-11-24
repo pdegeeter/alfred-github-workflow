@@ -2,9 +2,25 @@
 
 An [Alfred](https://www.alfredapp.com/) workflow, written in Rust, to navigate
 GitHub from Alfred: the repositories of the owners you care about, their pull
-requests and Actions, your review queue and your own pull requests.
+requests and Actions, your review queue, your own pull requests and a public
+repository search.
+
+| Keyword | What it lists |
+| ------- | ------------- |
+| `gh`    | Public GitHub repositories (live search) |
+| `gho`   | Repositories of your owners (`GH_OWNERS`) |
+| `ghp`   | Pull requests of a repository |
+| `gha`   | Actions workflows and runs of a repository |
+| `ghr`   | Pull requests awaiting your review |
+| `ghm`   | Your open pull requests |
 
 ## Usage
+
+### Public search — `gh`
+
+`gh <query>` searches every public repository on GitHub, live (any GitHub
+search qualifier works: `gh alfred language:rust stars:>50`). Results use the
+same modifiers as `gho`.
 
 ### Repositories — `gho`
 
@@ -80,7 +96,7 @@ and number.
   shown at once; a stale one too, while a background process refreshes it and
   Alfred reloads the list. Repositories are cached for 1 hour per owner, pull
   requests (and the `ghr` / `ghm` lists) for 1 minute, workflows for 10 minutes
-  and runs for 30 seconds.
+  and runs for 30 seconds. The public search (`gh`) is never cached.
 
 ## Configuration
 

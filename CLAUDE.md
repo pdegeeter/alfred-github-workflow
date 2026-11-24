@@ -17,7 +17,7 @@ doc comments before committing. `cargo test --all`,
 An Alfred (macOS) workflow written in Rust to navigate GitHub. A single binary,
 `alfred-gh`, backs every object of the Alfred graph:
 
-- **Script Filters**, one per keyword: `repos` (`gho`), `prs` (`ghp`),
+- **Script Filters**, one per keyword: `search` (`gh`), `repos` (`gho`), `prs` (`ghp`),
   `workflows` (`gha`), `review` (`ghr`), `mine` (`ghm`). They print Alfred
   JSON.
 - One **Run Script**, `alfred-gh run <arg>`, connected to every script filter
@@ -81,7 +81,7 @@ process without waiting (stale-cache refreshes).
   (fresh ⇒ serve; stale ⇒ serve + spawn `refresh` + `rerun`; missing ⇒ fetch),
   `App::refresh`, one method per script filter.
 - `repos.rs` — `repositoryOwner(login:)` pages (`ownerAffiliations: [OWNER]`),
-  pagination, `Repo` / `OwnerRepos`.
+  pagination, `Repo` / `OwnerRepos`, public repository search (`gh`, uncached).
 - `prs.rs` — `Pr`, one fixed query per state set (`OPEN_PRS_QUERY`…), CI
   rollup and review state, the cross-owner `Search` (`ghr` / `ghm`). `jira.rs` — ticket key extraction.
 - `workflows.rs` — Actions over REST: workflows, the last 100 runs on the
@@ -111,8 +111,9 @@ process without waiting (stale-cache refreshes).
   ordering are done in Rust (`alfredfiltersresults = false`).
 - **Script filters never hard-fail**: errors become an invalid Alfred item.
   One owner failing never hides another owner's results.
-- **Cache**: each owner (and later each repository's PRs, workflows, runs)
-  has its own entry and TTL (`Key::ttl`). A failed background refresh keeps
+- **Cache**: each owner, each repository's PRs, workflows and runs, and each
+  `ghr` / `ghm` qualifier set has its own entry and TTL (`Key::ttl`); `gh`
+  is never cached. A failed background refresh keeps
   its lock until it expires (60 s), which is the back-off. An organization
   returning no repository is never cached (likely SSO; shows the SSO item).
 - **Keywords are fixed.** Drill-downs (`reopen`) build queries from

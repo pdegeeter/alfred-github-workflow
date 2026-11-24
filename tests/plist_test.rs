@@ -64,6 +64,7 @@ fn every_keyword_runs_its_subcommand() {
         .collect();
 
     let expected: BTreeMap<String, String> = [
+        ("gh", "./alfred-gh search \"$1\""),
         ("gho", "./alfred-gh repos \"$1\""),
         ("gha", "./alfred-gh workflows \"$1\""),
         ("ghm", "./alfred-gh mine \"$1\""),

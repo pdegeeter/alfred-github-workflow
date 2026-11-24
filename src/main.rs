@@ -1,6 +1,7 @@
 //! `alfred-gh` — Alfred workflow entry point.
 //!
 //! Subcommands, dispatched by Alfred:
+//!   * `search [query]` — script filter `gh`: public repository search, live.
 //!   * `repos [query]` — script filter `gho`: repositories of the configured owners.
 //!   * `prs [query]`   — script filter `ghp`: pull requests of one repository.
 //!   * `workflows [query]` — script filter `gha`: Actions workflows and runs.
@@ -45,6 +46,7 @@ fn main() -> ExitCode {
     };
 
     match command.as_str() {
+        "search" => output(app.search_repos(&arg)),
         "repos" => output(app.repos(&arg)),
         "prs" => output(app.prs(&arg)),
         "workflows" => output(app.workflows(&arg)),
@@ -54,7 +56,7 @@ fn main() -> ExitCode {
         "refresh" => refresh(&app, &arg),
         other => {
             eprintln!(
-                "unknown command: `{other}` (expected repos, prs, workflows, review, mine, run or refresh)"
+                "unknown command: `{other}` (expected search, repos, prs, workflows, review, mine, run or refresh)"
             );
 
             ExitCode::FAILURE

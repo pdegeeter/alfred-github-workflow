@@ -66,6 +66,7 @@ cargo build
 B=./target/debug/alfred-gh
 export alfred_workflow_cache=$(mktemp -d) GH_OWNERS=my-org,my-user
 
+$B search "ripgrep" | python3 -m json.tool  # gh (live)
 $B repos "" | python3 -m json.tool        # gho (first run fetches, next ones hit the cache)
 $B repos "m:api" | python3 -m json.tool   # gho, one owner
 $B prs "api" | python3 -m json.tool       # ghp: candidates, or the PRs if unique
@@ -106,6 +107,7 @@ fictitious owners `acme-org` (organization) and `octo-user` (user).
 | `tests/repos_test.rs`   | Repository page parsing, pagination merge (cursor in the argv), the `gho` listing: per-owner cache entries, fresh/stale serving, background refresh spawn and lock, failed refresh back-off, one owner failing, SSO (error and empty organization), missing `gh`, not authenticated, rate limit, default owner. |
 | `tests/prs_test.rs`     | Pull request parsing (checks, review state, deleted authors), one fixed query per state with its exact argv, the `ghp` listing: `owner/name` without listing repos, unique bare name, ambiguous/partial/empty names as candidates, unknown repository, filters, `state:`, stale refresh, errors and empty lists. |
 | `tests/workflows_test.rs` | Workflow and run parsing, last run per workflow, run status and duration, branch percent-encoding, the exact REST paths, invalid repositories never reaching `gh`, the `gha` listing (cached default branch, status icons, ⏸, filters), `runs:<id>`, stale refresh, errors, cache keys. |
+| `tests/public_search_test.rs` | `gh`: hint on an empty query (no `gh` call), the query passed as is, repository items and modifiers, nothing cached, empty results and errors. |
 | `tests/search_test.rs`  | `ghr` / `ghm`: search query text, exact argv with the qualifiers built from owner kinds, results across repositories, filtering, a failing owner left out of the qualifiers, empty results, cache keys per qualifiers. |
 | `tests/jira_test.rs`    | Ticket key extraction and title-over-branch priority. |
 | `tests/ranking_test.rs` | Ranking tiers, push-date ties, archived last, empty query, repository resolution (exact / bare / ambiguous / partial / unknown), pull request filters. |

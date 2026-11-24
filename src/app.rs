@@ -425,6 +425,39 @@ impl<'a> App<'a> {
         }
     }
 
+    /// `gh`: public repository search, live (no cache: every keystroke is a
+    /// new query and Alfred's queue keeps only the latest one).
+    pub fn search_repos(&self, input: &str) -> Listing {
+        let now = self.now();
+        let input = input.trim();
+
+        if input.is_empty() {
+            return Listing::of(vec![alfred::error_item(
+                "Search GitHub repositories",
+                "Type a query, with any GitHub search qualifier (language:rust stars:>100)",
+            )]);
+        }
+
+        let found = match repos::search(&self.gh(), input) {
+            Ok(found) => found,
+            Err(error) => return Listing::of(vec![alfred::gh_error_item(None, &error, now)]),
+        };
+
+        if found.is_empty() {
+            return Listing::of(vec![alfred::error_item(
+                &format!("No repository matches “{input}”"),
+                "Try another search",
+            )]);
+        }
+
+        Listing::of(
+            found
+                .iter()
+                .map(|repo| alfred::repo_item(repo, &self.settings.editor_app, now))
+                .collect(),
+        )
+    }
+
     /// The default branch of a cached repository.
     fn default_branch(&self, repo: &str) -> Option<String> {
         self.cached_repos()
