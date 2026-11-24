@@ -1,6 +1,6 @@
 [package]
 name = "alfred-gh"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Alfred workflow to navigate GitHub repositories, pull requests and Actions"
 license = "MIT"
